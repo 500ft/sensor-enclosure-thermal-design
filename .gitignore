@@ -10,3 +10,6 @@ tmp/
 
 # bare-repo mirrors accidentally placed in the working tree; never commit
 *.git/
+
+# rehearsal outputs
+build/

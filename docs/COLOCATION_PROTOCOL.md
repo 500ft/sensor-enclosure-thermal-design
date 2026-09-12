@@ -35,6 +35,8 @@ Model agreement requires an as-built prediction with propagated model/input unce
 
 ## Intake contract and reproduction
 
+Rehearsal of the whole chain on synthetic data with known answers: `PYTHONPATH=. python -m analysis.colocation_rehearsal --out-dir build/rehearsal` (EN-R03). It runs the intake CLI and then `compute_metrics` on the same bytes and writes `rehearsal.json`; synthetic input is always `SYNTHETIC_ONLY`.
+
 New CLI: `python -m analysis.colocation_intake CSV_PATH --metadata METADATA_JSON`; capitalized paths are placeholders for real artifacts, not files claimed to exist.
 
 Run from the repository root. The requested compatibility name is also usable as
