@@ -1,4 +1,4 @@
-# EN-R03 — synthetic CSV-to-analysis rehearsal — 2026-09-12
+# EN-R03S — synthetic CSV-to-analysis rehearsal — 2026-09-12
 
 Branch `audit/colocation-rehearsal-20260912` off `main` b200a7f. Sprint order task 6.
 
@@ -29,3 +29,9 @@ One thing this exposed: the intake CLI exits 2 for both a refused file and an ad
 
 ## Not done
 No physical CSV, no field value, no thermal-model validation. EN-S02 and EN-S11 unchanged.
+
+## Review repair (same day)
+Two defects the 2026-09-12 review found, both reproduced here before fixing:
+1. **Duplicate task ID.** My rehearsal row reused `EN-R03`, which already names the *blocked owner* measurement task ("Acquire and review actual co-location evidence"). A tool indexing by ID would replace the owner task with a completed synthetic one. The rehearsal row is now `EN-R03S`; the owner `EN-R03` is untouched and still `blocked`. A test asserts ledger IDs are unique and that both rows exist with their statuses.
+2. **Different bytes.** Changing the CSV after the intake accepted it made the metrics run on the changed file. Now `rehearse()` copies CSV + metadata into a read-only `snapshot/`, runs the intake on the snapshot, computes metrics from the **same bytes held in memory**, and refuses (`IntegrityError`, CLI exit 4) if the intake's `csv_sha256` differs from the metrics input. Tests: mutating the original after snapshot changes nothing; tampering with the snapshot between steps is an integrity failure; snapshot files are read-only.
+21 rehearsal tests; full discover 73 with the same two sandbox-only `test_metrics_cli` failures.
