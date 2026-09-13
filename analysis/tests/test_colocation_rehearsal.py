@@ -122,6 +122,65 @@ class IntegrityTests(unittest.TestCase):
                 self.assertFalse(mode & stat.S_IWUSR, name)
 
 
+class ReplayAndMetadataTests(unittest.TestCase):
+    """Review 2 (2026-09-12): replaying a snapshot into its own run directory deleted the snapshot
+    and left a report pointing at a missing file; metadata could change between snapshot and intake
+    while metrics kept the original dictionary."""
+
+    def _first_run(self, tmp):
+        rows, metadata, known = R.generate(START)
+        csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp) / "in")
+        rep = R.rehearse(csv_path, meta_path, Path(tmp) / "out", known)
+        return rep, Path(tmp) / "out"
+
+    def test_replay_into_own_output_directory_is_refused_before_touching_anything(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rep, out = self._first_run(tmp)
+            snap_csv, snap_meta = out / "snapshot/input.csv", out / "snapshot/input.metadata.json"
+            before = (snap_csv.read_bytes(), (out / "rehearsal.json").read_bytes())
+            with self.assertRaises(R.CollisionError):
+                R.rehearse(snap_csv, snap_meta, out)
+            self.assertTrue(snap_csv.exists() and snap_meta.exists())
+            self.assertEqual((snap_csv.read_bytes(), (out / "rehearsal.json").read_bytes()), before)
+
+    def test_replay_of_a_saved_snapshot_into_a_fresh_directory_reproduces_the_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rep, out = self._first_run(tmp)
+            rep2 = R.rehearse(out / "snapshot/input.csv", out / "snapshot/input.metadata.json", Path(tmp) / "out2", rep["known"])
+            self.assertEqual(rep2["csv_sha256"], rep["csv_sha256"]); self.assertEqual(rep2["metadata_sha256"], rep["metadata_sha256"])
+            self.assertEqual(rep2["metrics"], rep["metrics"]); self.assertEqual(rep2["intake"]["classification"], rep["intake"]["classification"])
+
+    def test_existing_run_directory_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rep, out = self._first_run(tmp)
+            rows, metadata, known = R.generate(START)
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp) / "in2")
+            with self.assertRaises(R.CollisionError):
+                R.rehearse(csv_path, meta_path, out, known)
+
+    def test_metadata_swapped_between_snapshot_and_intake_is_an_integrity_failure(self):
+        import stat
+        rows, metadata, known = R.generate(START)
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp) / "in")
+            orig = R.run_intake
+            def swap(c, m):
+                m.chmod(stat.S_IWUSR | stat.S_IRUSR); mm = json.loads(m.read_text()); mm["evidence_kind"] = "physical"; m.write_text(json.dumps(mm))
+                return orig(c, m)
+            R.run_intake = swap
+            try:
+                with self.assertRaises(R.IntegrityError):
+                    R.rehearse(csv_path, meta_path, Path(tmp) / "out", known)
+            finally:
+                R.run_intake = orig
+
+    def test_report_binds_both_csv_and_metadata_hashes_to_the_intake(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rep, _ = self._first_run(tmp)
+        self.assertEqual(rep["metadata_input_sha256"], rep["intake"]["metadata_sha256"])
+        self.assertEqual(rep["metrics_input_sha256"], rep["intake"]["csv_sha256"])
+
+
 class LedgerIntegrityTests(unittest.TestCase):
     def test_sprint_ledger_ids_are_unique(self):
         ids = [r["id"] for r in csv.DictReader((ROOT / "docs/SPRINT_TASKS.csv").open())]
