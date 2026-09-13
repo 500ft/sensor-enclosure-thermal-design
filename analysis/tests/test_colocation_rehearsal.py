@@ -71,6 +71,69 @@ class KnownAnswerTests(unittest.TestCase):
             self.assertFalse(rep["validates_thermal_model"])
 
 
+class IntegrityTests(unittest.TestCase):
+    """Review finding 2026-09-12: the original CSV could be changed after intake and the metrics
+    silently used the changed file. Now every step reads one read-only snapshot."""
+
+    def test_mutating_the_original_after_snapshot_changes_nothing(self):
+        rows, metadata, known = R.generate(START)
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp))
+            orig_intake = R.run_intake
+            def mutate_original_then_intake(c, m):
+                txt = csv_path.read_text().splitlines(); txt[1] = txt[1].replace(txt[1].split(",")[1], "99.0", 1)
+                csv_path.write_text("\n".join(txt) + "\n")            # original changes; snapshot does not
+                return orig_intake(c, m)
+            R.run_intake = mutate_original_then_intake
+            try:
+                rep = R.rehearse(csv_path, meta_path, Path(tmp) / "out", known)
+            finally:
+                R.run_intake = orig_intake
+        self.assertTrue(rep["comparison"]["all_ok"])
+        self.assertEqual(rep["csv_sha256"], rep["intake"]["csv_sha256"])
+        self.assertEqual(rep["metrics_input_sha256"], rep["intake"]["csv_sha256"])
+
+    def test_tampering_with_the_snapshot_between_steps_is_an_integrity_failure(self):
+        import os, stat
+        rows, metadata, known = R.generate(START)
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp))
+            orig_intake = R.run_intake
+            def intake_then_tamper_snapshot(c, m):
+                out = orig_intake(c, m)
+                c.chmod(stat.S_IWUSR | stat.S_IRUSR)
+                txt = c.read_text().splitlines(); txt[1] = txt[1].replace(txt[1].split(",")[1], "99.0", 1); c.write_text("\n".join(txt) + "\n")
+                return out
+            R.run_intake = intake_then_tamper_snapshot
+            try:
+                with self.assertRaises(R.IntegrityError):
+                    R.rehearse(csv_path, meta_path, Path(tmp) / "out", known)
+            finally:
+                R.run_intake = orig_intake
+
+    def test_snapshot_files_are_read_only(self):
+        import stat
+        rows, metadata, _ = R.generate(START)
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp))
+            R.rehearse(csv_path, meta_path, Path(tmp) / "out")
+            for name in ("input.csv", "input.metadata.json"):
+                mode = (Path(tmp) / "out/snapshot" / name).stat().st_mode
+                self.assertFalse(mode & stat.S_IWUSR, name)
+
+
+class LedgerIntegrityTests(unittest.TestCase):
+    def test_sprint_ledger_ids_are_unique(self):
+        ids = [r["id"] for r in csv.DictReader((ROOT / "docs/SPRINT_TASKS.csv").open())]
+        dupes = sorted({i for i in ids if ids.count(i) > 1})
+        self.assertEqual(dupes, [], f"duplicate task ids: {dupes}")
+
+    def test_owner_measurement_task_is_preserved_and_rehearsal_has_its_own_id(self):
+        rows = {(r["id"], r["owner"]): r for r in csv.DictReader((ROOT / "docs/SPRINT_TASKS.csv").open())}
+        self.assertIn(("EN-R03", "Owner"), rows); self.assertEqual(rows[("EN-R03", "Owner")]["status"], "blocked")
+        self.assertIn(("EN-R03S", "Agent"), rows); self.assertEqual(rows[("EN-R03S", "Agent")]["status"], "done")
+
+
 class MalformedDataTests(unittest.TestCase):
     def setUp(self):
         self.rows, self.metadata, _ = R.generate(START, missing_every=None)

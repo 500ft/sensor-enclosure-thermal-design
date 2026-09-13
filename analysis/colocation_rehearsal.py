@@ -76,6 +76,22 @@ def write_inputs(rows, metadata, out_dir: Path) -> tuple[Path, Path]:
     return csv_path, meta_path
 
 
+def snapshot(csv_path: Path, meta_path: Path, out_dir: Path) -> tuple[Path, Path, bytes, dict]:
+    """Copy CSV + metadata into out_dir/snapshot/, make them read-only, and return the bytes that
+    EVERY later step uses. Intake runs on the snapshot files; metrics run on the same bytes held in
+    memory; the report records the snapshot hashes. A caller mutating the original CSV after this
+    point changes nothing downstream, and a mutation of the snapshot itself is detected because the
+    intake's csv_sha256 must equal the hash of the bytes the metrics consume."""
+    import os, shutil, stat
+    snap = out_dir / "snapshot"; snap.mkdir(parents=True, exist_ok=True)
+    csv_s, meta_s = snap / "input.csv", snap / "input.metadata.json"
+    for src, dst in ((csv_path, csv_s), (meta_path, meta_s)):
+        if dst.exists(): dst.chmod(stat.S_IWUSR | stat.S_IRUSR); dst.unlink()
+        shutil.copyfile(src, dst); dst.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+    csv_bytes = csv_s.read_bytes()
+    return csv_s, meta_s, csv_bytes, json.loads(meta_s.read_text())
+
+
 def run_intake(csv_path: Path, meta_path: Path) -> tuple[int, dict | None, str]:
     p = subprocess.run([sys.executable, "-m", "analysis.colocation_intake", str(csv_path), "--metadata", str(meta_path)],
                        cwd=ROOT, capture_output=True, text=True)
@@ -87,9 +103,11 @@ def run_intake(csv_path: Path, meta_path: Path) -> tuple[int, dict | None, str]:
         return p.returncode, None, (p.stderr or p.stdout).strip()
 
 
-def run_metrics(csv_path: Path, metadata: dict) -> dict:
-    with csv_path.open(newline="") as fh:
-        rows = [(parse_timestamp(r["timestamp"]), r["sensor_temperature"], r["reference_temperature"]) for r in csv.DictReader(fh)]
+def run_metrics(csv_bytes: bytes, metadata: dict) -> dict:
+    """Metrics on the snapshot BYTES, never on a path that could have changed since intake."""
+    import io
+    rows = [(parse_timestamp(r["timestamp"]), r["sensor_temperature"], r["reference_temperature"])
+            for r in csv.DictReader(io.StringIO(csv_bytes.decode("utf-8")))]
     m = compute_metrics(rows, 1, window_start=parse_timestamp(metadata["window_start"]), window_end=parse_timestamp(metadata["window_end"]))
     return {k: getattr(m, k) for k in ("count", "expected_count", "bias", "mae", "rmse", "correlation", "drift_per_day",
                                         "paired_completeness", "delivery_completeness", "duplicate_slot_records", "off_grid_records", "outside_window_records", "completeness_basis")}
@@ -112,16 +130,25 @@ def compare(known: dict | None, intake: dict | None, metrics: dict | None, tol: 
     return {"checked": True, "all_ok": all(v["ok"] for v in out.values()), "tolerance": tol, "items": out}
 
 
+class IntegrityError(RuntimeError):
+    """The bytes the intake accepted are not the bytes the metrics would consume."""
+
+
 def rehearse(csv_path: Path, meta_path: Path, out_dir: Path, known: dict | None = None) -> dict:
-    metadata = json.loads(meta_path.read_text())
-    rc, intake, err = run_intake(csv_path, meta_path)
-    report = dict(schema_version=1, csv=str(csv_path), csv_sha256=hashlib.sha256(csv_path.read_bytes()).hexdigest(),
-                  metadata_sha256=hashlib.sha256(meta_path.read_bytes()).hexdigest(),
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_s, meta_s, csv_bytes, metadata = snapshot(csv_path, meta_path, out_dir)
+    snap_sha = hashlib.sha256(csv_bytes).hexdigest()
+    rc, intake, err = run_intake(csv_s, meta_s)
+    report = dict(schema_version=2, original_csv=str(csv_path), snapshot_csv=str(csv_s), snapshot_metadata=str(meta_s),
+                  csv_sha256=snap_sha, metadata_sha256=hashlib.sha256(meta_s.read_bytes()).hexdigest(),
                   intake_exit_code=rc, intake=intake, intake_error=err or None, metrics=None, known=known, comparison=None,
                   validates_thermal_model=False,
-                  note="Synthetic rehearsal of the intake-to-metrics chain. Classification is the intake's, carried unchanged; SYNTHETIC_ONLY data is never evidence.")
+                  note="Synthetic rehearsal of the intake-to-metrics chain on ONE read-only snapshot. Classification is the intake's, carried unchanged; SYNTHETIC_ONLY data is never evidence.")
     if intake is not None:
-        report["metrics"] = run_metrics(csv_path, metadata)
+        if intake.get("csv_sha256") != snap_sha or csv_s.read_bytes() != csv_bytes:
+            raise IntegrityError(f"intake accepted sha {str(intake.get('csv_sha256'))[:12]} but the metrics input is {snap_sha[:12]}; refusing to compute metrics on different bytes")
+        report["metrics"] = run_metrics(csv_bytes, metadata)
+        report["metrics_input_sha256"] = snap_sha
         report["comparison"] = compare(known, intake, report["metrics"])
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "rehearsal.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
@@ -139,7 +166,10 @@ def main(argv=None) -> int:
     if a.csv is None:
         rows, metadata, known = generate(datetime(2026, 1, 1, tzinfo=timezone.utc))
         a.csv, a.metadata = write_inputs(rows, metadata, a.out_dir)
-    rep = rehearse(a.csv, a.metadata, a.out_dir, known)
+    try:
+        rep = rehearse(a.csv, a.metadata, a.out_dir, known)
+    except IntegrityError as e:
+        print("INTEGRITY FAILURE:", e); return 4
     cls = rep["intake"]["classification"] if rep["intake"] else "REFUSED"
     cmp_ = rep["comparison"]
     print(f"intake: exit {rep['intake_exit_code']} {cls}" + (f" -- {rep['intake_error']}" if rep["intake_error"] else ""))
