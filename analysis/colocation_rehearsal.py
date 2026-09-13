@@ -76,20 +76,29 @@ def write_inputs(rows, metadata, out_dir: Path) -> tuple[Path, Path]:
     return csv_path, meta_path
 
 
-def snapshot(csv_path: Path, meta_path: Path, out_dir: Path) -> tuple[Path, Path, bytes, dict]:
-    """Copy CSV + metadata into out_dir/snapshot/, make them read-only, and return the bytes that
-    EVERY later step uses. Intake runs on the snapshot files; metrics run on the same bytes held in
-    memory; the report records the snapshot hashes. A caller mutating the original CSV after this
-    point changes nothing downstream, and a mutation of the snapshot itself is detected because the
-    intake's csv_sha256 must equal the hash of the bytes the metrics consume."""
-    import os, shutil, stat
-    snap = out_dir / "snapshot"; snap.mkdir(parents=True, exist_ok=True)
+def snapshot(csv_path: Path, meta_path: Path, out_dir: Path) -> tuple[Path, Path, bytes, bytes]:
+    """Copy CSV + metadata into a FRESH out_dir/snapshot/, make them read-only, and return the bytes
+    that EVERY later step uses (CSV and metadata alike). Refuses before touching anything if either
+    source lies inside out_dir (replaying a saved snapshot into its own run directory would delete
+    the evidence it is replaying) or if out_dir already holds a rehearsal: use a fresh run directory.
+    Review 2 (2026-09-12)."""
+    import shutil, stat
+    out_dir = out_dir.resolve(); snap_dir = out_dir / "snapshot"
+    for sp in (csv_path.resolve(), meta_path.resolve()):
+        if snap_dir == sp.parent or snap_dir in sp.parents:
+            raise CollisionError(f"input {sp} is a saved snapshot inside the output directory; replay it into a FRESH run directory")
+    if snap_dir.exists() or (out_dir / "rehearsal.json").exists():
+        raise CollisionError(f"{out_dir} already holds a rehearsal; refusing to overwrite evidence -- use a fresh run directory")
+    snap = out_dir / "snapshot"; snap.mkdir(parents=True, exist_ok=False)
     csv_s, meta_s = snap / "input.csv", snap / "input.metadata.json"
-    for src, dst in ((csv_path, csv_s), (meta_path, meta_s)):
-        if dst.exists(): dst.chmod(stat.S_IWUSR | stat.S_IRUSR); dst.unlink()
-        shutil.copyfile(src, dst); dst.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
-    csv_bytes = csv_s.read_bytes()
-    return csv_s, meta_s, csv_bytes, json.loads(meta_s.read_text())
+    csv_bytes, meta_bytes = csv_path.read_bytes(), meta_path.read_bytes()
+    csv_s.write_bytes(csv_bytes); meta_s.write_bytes(meta_bytes)
+    for dst in (csv_s, meta_s): dst.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+    return csv_s, meta_s, csv_bytes, meta_bytes
+
+
+class CollisionError(RuntimeError):
+    """Inputs and outputs collide; nothing was touched."""
 
 
 def run_intake(csv_path: Path, meta_path: Path) -> tuple[int, dict | None, str]:
@@ -135,18 +144,21 @@ class IntegrityError(RuntimeError):
 
 
 def rehearse(csv_path: Path, meta_path: Path, out_dir: Path, known: dict | None = None) -> dict:
-    out_dir.mkdir(parents=True, exist_ok=True)
-    csv_s, meta_s, csv_bytes, metadata = snapshot(csv_path, meta_path, out_dir)
-    snap_sha = hashlib.sha256(csv_bytes).hexdigest()
+    csv_s, meta_s, csv_bytes, meta_bytes = snapshot(csv_path, meta_path, out_dir)
+    metadata = json.loads(meta_bytes.decode("utf-8"))
+    snap_sha, meta_sha = hashlib.sha256(csv_bytes).hexdigest(), hashlib.sha256(meta_bytes).hexdigest()
     rc, intake, err = run_intake(csv_s, meta_s)
-    report = dict(schema_version=2, original_csv=str(csv_path), snapshot_csv=str(csv_s), snapshot_metadata=str(meta_s),
-                  csv_sha256=snap_sha, metadata_sha256=hashlib.sha256(meta_s.read_bytes()).hexdigest(),
+    report = dict(schema_version=3, original_csv=str(csv_path), snapshot_csv=str(csv_s), snapshot_metadata=str(meta_s),
+                  csv_sha256=snap_sha, metadata_sha256=meta_sha,
                   intake_exit_code=rc, intake=intake, intake_error=err or None, metrics=None, known=known, comparison=None,
                   validates_thermal_model=False,
                   note="Synthetic rehearsal of the intake-to-metrics chain on ONE read-only snapshot. Classification is the intake's, carried unchanged; SYNTHETIC_ONLY data is never evidence.")
     if intake is not None:
         if intake.get("csv_sha256") != snap_sha or csv_s.read_bytes() != csv_bytes:
-            raise IntegrityError(f"intake accepted sha {str(intake.get('csv_sha256'))[:12]} but the metrics input is {snap_sha[:12]}; refusing to compute metrics on different bytes")
+            raise IntegrityError(f"intake accepted csv sha {str(intake.get('csv_sha256'))[:12]} but the metrics input is {snap_sha[:12]}; refusing to compute metrics on different bytes")
+        if intake.get("metadata_sha256") != meta_sha or meta_s.read_bytes() != meta_bytes:
+            raise IntegrityError(f"intake read metadata sha {str(intake.get('metadata_sha256'))[:12]} but the metrics metadata is {meta_sha[:12]}; refusing -- classification and metrics must describe the same declaration")
+        report["metadata_input_sha256"] = meta_sha
         report["metrics"] = run_metrics(csv_bytes, metadata)
         report["metrics_input_sha256"] = snap_sha
         report["comparison"] = compare(known, intake, report["metrics"])
@@ -170,6 +182,8 @@ def main(argv=None) -> int:
         rep = rehearse(a.csv, a.metadata, a.out_dir, known)
     except IntegrityError as e:
         print("INTEGRITY FAILURE:", e); return 4
+    except CollisionError as e:
+        print("COLLISION:", e); return 5
     cls = rep["intake"]["classification"] if rep["intake"] else "REFUSED"
     cmp_ = rep["comparison"]
     print(f"intake: exit {rep['intake_exit_code']} {cls}" + (f" -- {rep['intake_error']}" if rep["intake_error"] else ""))
