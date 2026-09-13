@@ -1,0 +1,161 @@
+"""End-to-end rehearsal: intake -> metrics on synthetic CSVs with known answers and malformed inputs."""
+import copy, csv, hashlib, json, math, subprocess, sys, tempfile, unittest
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from analysis import colocation_rehearsal as R
+
+ROOT = Path(__file__).resolve().parents[2]
+START = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+
+def _run_files(rows, metadata, tmp):
+    csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp))
+    return R.rehearse(csv_path, meta_path, Path(tmp) / "out")
+
+
+class KnownAnswerTests(unittest.TestCase):
+    def test_generated_case_reproduces_its_known_answers_exactly(self):
+        rows, metadata, known = R.generate(START)
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp))
+            rep = R.rehearse(csv_path, meta_path, Path(tmp) / "out", known)
+        self.assertEqual(rep["intake_exit_code"], 3)                      # synthetic is never evidence
+        self.assertEqual(rep["intake"]["classification"], "SYNTHETIC_ONLY")
+        self.assertFalse(rep["intake"]["validates_thermal_model"])
+        self.assertTrue(rep["comparison"]["all_ok"], rep["comparison"])
+        self.assertEqual(rep["metrics"]["count"], known["paired_slots"])
+        self.assertAlmostEqual(rep["metrics"]["bias"], known["bias"], places=12)
+        self.assertAlmostEqual(rep["metrics"]["rmse"], known["rmse"], places=12)
+
+    def test_known_answer_arithmetic_is_what_the_generator_says(self):
+        # 14 rows are blanked (i in 97..1358 step 97 -> 14 values); 1426 paired; bias is the
+        # exact mean of the constructed residual, computed here independently of generate().
+        rows, _, known = R.generate(START)
+        blanks = [i for i in range(1, 1440) if i % 97 == 0]
+        self.assertEqual(len(blanks), 14)
+        self.assertEqual(known["paired_slots"], 1440 - 14)
+        resid = [0.8 + 0.3 * i / 1440 + (-0.5 if not (360 <= i < 1080) else 0.0) for i in range(1440) if i not in blanks]
+        # known["bias"] is computed from the 6-dp values as written, so agreement is to ~1e-7, not 1e-12
+        self.assertAlmostEqual(known["bias"], sum(resid) / len(resid), places=6)
+        # and the residual read back from the CSV text equals known exactly
+        back = [float(r["sensor_temperature"]) - float(r["reference_temperature"]) for r in rows if r["sensor_temperature"] != ""]
+        self.assertEqual(sum(back) / len(back), known["bias"])
+        self.assertEqual(sum(1 for r in rows if r["sensor_temperature"] == ""), 14)
+
+    def test_zero_residual_case_gives_zero_metrics(self):
+        rows, metadata, known = R.generate(START, bias_c=0.0, drift_c_per_day=0.0, night_offset_c=0.0, missing_every=None)
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp))
+            rep = R.rehearse(csv_path, meta_path, Path(tmp) / "out", known)
+        self.assertEqual(rep["metrics"]["count"], 1440)
+        for k in ("bias", "mae", "rmse"):
+            self.assertAlmostEqual(rep["metrics"][k], 0.0, places=12)
+        self.assertEqual(rep["metrics"]["paired_completeness"], 1.0)
+
+    def test_negative_control_a_wrong_known_answer_is_detected(self):
+        rows, metadata, known = R.generate(START)
+        wrong = dict(known, bias=known["bias"] + 0.01)
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(rows, metadata, Path(tmp))
+            rep = R.rehearse(csv_path, meta_path, Path(tmp) / "out", wrong)
+        self.assertFalse(rep["comparison"]["all_ok"])
+        self.assertFalse(rep["comparison"]["items"]["metrics.bias"]["ok"])
+
+    def test_cli_generates_runs_and_reports(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = subprocess.run([sys.executable, "-m", "analysis.colocation_rehearsal", "--out-dir", tmp], cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            self.assertIn("SYNTHETIC_ONLY", p.stdout); self.assertIn("ALL OK", p.stdout)
+            rep = json.loads((Path(tmp) / "rehearsal.json").read_text())
+            self.assertEqual(rep["csv_sha256"], hashlib.sha256((Path(tmp) / "rehearsal.csv").read_bytes()).hexdigest())
+            self.assertFalse(rep["validates_thermal_model"])
+
+
+class MalformedDataTests(unittest.TestCase):
+    def setUp(self):
+        self.rows, self.metadata, _ = R.generate(START, missing_every=None)
+
+    def _expect_refusal(self, rows, metadata, fragment):
+        with tempfile.TemporaryDirectory() as tmp:
+            rep = _run_files(rows, metadata, tmp)
+        self.assertEqual(rep["intake_exit_code"], 2, rep)
+        self.assertIsNone(rep["metrics"], "metrics must not be computed on refused input")
+        self.assertIn(fragment, rep["intake_error"])
+
+    def test_hash_mismatch_is_refused_before_anything_else(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path, meta_path = R.write_inputs(self.rows, self.metadata, Path(tmp))
+            csv_path.write_text(csv_path.read_text() + "\n")          # bytes change, metadata hash stale
+            rep = R.rehearse(csv_path, meta_path, Path(tmp) / "out")
+        self.assertEqual(rep["intake_exit_code"], 2); self.assertIn("csv_sha256 mismatch", rep["intake_error"])
+
+    def test_duplicate_slot_is_refused(self):
+        rows = self.rows + [self.rows[500]]
+        rows.sort(key=lambda r: r["timestamp"])
+        self._expect_refusal(rows, self.metadata, "duplicate sampling slot")
+
+    def test_off_grid_timestamp_is_refused(self):
+        rows = copy.deepcopy(self.rows); rows[10]["timestamp"] = (START + timedelta(minutes=10, seconds=30)).isoformat()
+        self._expect_refusal(rows, self.metadata, "off the exact 60-second sample grid")
+
+    def test_non_chronological_rows_are_refused(self):
+        rows = copy.deepcopy(self.rows); rows[5], rows[6] = rows[6], rows[5]
+        self._expect_refusal(rows, self.metadata, "chronological")
+
+    def test_negative_or_nonnumeric_weather_is_refused(self):
+        rows = copy.deepcopy(self.rows); rows[700]["solar_w_m2"] = "-5"
+        self._expect_refusal(rows, self.metadata, "weather observations")
+        rows = copy.deepcopy(self.rows); rows[700]["wind_m_s"] = "calm"
+        self._expect_refusal(rows, self.metadata, "weather observations")
+
+    def test_extra_column_is_refused(self):
+        rows = [dict(r, humidity="50") for r in self.rows]
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path = Path(tmp) / "x.csv"
+            with csv_path.open("w", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=R.FIELDS + ["humidity"]); w.writeheader(); w.writerows(rows)
+            meta = dict(self.metadata, csv_sha256=hashlib.sha256(csv_path.read_bytes()).hexdigest())
+            meta_path = Path(tmp) / "x.json"; meta_path.write_text(json.dumps(meta))
+            rep = R.rehearse(csv_path, meta_path, Path(tmp) / "out")
+        self.assertEqual(rep["intake_exit_code"], 2); self.assertIn("intake schema", rep["intake_error"])
+
+    def test_missing_provenance_and_bad_uncertainty_are_refused(self):
+        meta = dict(self.metadata); meta["calibration_reference"] = ""
+        self._expect_refusal(self.rows, meta, "missing declared provenance")
+        meta = dict(self.metadata, paired_u95_c=0)
+        self._expect_refusal(self.rows, meta, "paired_u95_c")
+
+    def test_wrong_window_length_is_refused(self):
+        meta = dict(self.metadata, window_end=(START + timedelta(hours=23)).isoformat())
+        self._expect_refusal(self.rows, meta, "24-hour window")
+
+    def test_day_only_data_is_incomplete_not_refused_and_metrics_still_run(self):
+        # INCOMPLETE is admitted data that fails the coverage thresholds; the CLI exits 2 like a
+        # refusal but returns a result, and the metrics are still computed so the shortfall is visible.
+        rows = [r for r in self.rows if float(r["solar_w_m2"]) > 5]                   # night removed
+        with tempfile.TemporaryDirectory() as tmp:
+            rep = _run_files(rows, self.metadata, tmp)
+        self.assertEqual(rep["intake"]["classification"], "INCOMPLETE")
+        self.assertEqual(rep["intake_exit_code"], 2)
+        self.assertEqual(rep["intake"]["low_solar_paired_slots"], 0)
+        self.assertIsNotNone(rep["metrics"]); self.assertEqual(rep["metrics"]["count"], 720)
+
+    def test_too_much_missing_data_is_incomplete(self):
+        rows, metadata, _ = R.generate(START, missing_every=5)                           # ~20 % blanked
+        with tempfile.TemporaryDirectory() as tmp:
+            rep = _run_files(rows, metadata, tmp)
+        self.assertEqual(rep["intake"]["classification"], "INCOMPLETE")
+        self.assertLess(rep["intake"]["paired_fraction"], 0.90)
+
+    def test_physical_declaration_on_synthetic_shape_is_reviewable_not_validated(self):
+        # The intake cannot tell a mislabelled synthetic file from a real one; this records that
+        # the declaration is the owner's and that even then validates_thermal_model stays False.
+        meta = dict(self.metadata, evidence_kind="physical")
+        with tempfile.TemporaryDirectory() as tmp:
+            rep = _run_files(self.rows, meta, tmp)
+        self.assertEqual(rep["intake"]["classification"], "REVIEWABLE_PILOT")
+        self.assertFalse(rep["intake"]["validates_thermal_model"]); self.assertFalse(rep["validates_thermal_model"])
+
+
+if __name__ == "__main__":
+    unittest.main()
