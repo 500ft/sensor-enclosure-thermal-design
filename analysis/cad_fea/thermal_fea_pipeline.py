@@ -64,19 +64,6 @@ truth and can be cross-checked.
 from __future__ import annotations
 
 import argparse
-import sys
-
-# The variant parameter ledger is shared with the lumped model so FEA and the
-# analytical baseline never drift apart. We import lazily/defensively so this
-# stub still imports for --help even if run from an odd working directory.
-try:  # pragma: no cover - convenience import
-    import os
-    _HERE = os.path.dirname(os.path.abspath(__file__))
-    sys.path.insert(0, os.path.join(_HERE, ".."))
-    import thermal_bias  # noqa: F401  (used once the solver is wired)
-    _HAVE_LEDGER = True
-except Exception:  # noqa: BLE001
-    _HAVE_LEDGER = False
 
 
 INSTALL_PENDING_MSG = (
