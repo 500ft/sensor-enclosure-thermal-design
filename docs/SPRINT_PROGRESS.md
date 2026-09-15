@@ -18,7 +18,11 @@ The requested `analysis/intake_gate.py` is now a tested delegating module CLI.
 
 The authoritative [ledger](SPRINT_TASKS.csv) now explicitly separates EN-R01
 (draft protocol preparation done), EN-R02 (executable software verification done)
-and EN-R03S (actual co-location acquisition/review blocked). A malformed timestamp
+and EN-R03 (actual co-location acquisition/review blocked). [Corrected 2026-09-16:
+this sentence previously named "EN-R03S" for the blocked acquisition. EN-R03 is
+the blocked Owner acquisition/review task; EN-R03S is the separate synthetic
+rehearsal added 2026-09-12 and marked done. The two evidence routes must not be
+conflated -- EN-R03S proves the arithmetic chain, not the enclosure.] A malformed timestamp
 metadata regression exposed a traceback; the intake now returns diagnostic exit
 2. All 52 analysis tests pass, including identical behavior through both module
 names. Tests generate synthetic fixtures, including deliberately physical-labeled

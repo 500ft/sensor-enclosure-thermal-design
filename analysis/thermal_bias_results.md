@@ -241,3 +241,30 @@ cold bias occurs only when sky-directed radiative loss exceeds internal heating.
 The assumed shield plates/surroundings remain at local air temperature; their
 own nighttime radiative cooling is not independently solved. The small V1/V2
 predictions therefore need particular caution before a physical shield claim.
+
+## Matched-control sensitivity screen (A3, 2026-09-16) — the nominal advantage is not robust to combined assumptions
+
+The one-at-a-time [sensitivity block](#4-sensitivity-which-uncertain-input-dominates) shows which
+single assumption moves V1's bias most; it does **not** establish robustness when several move
+together. [`analysis/matched_control_sensitivity.py`](matched_control_sensitivity.py) runs a finite
+screen — 8 V1 assumption combinations (`solar_factor` ∈ {0.18, 0.30}, `conv_boost` ∈ {1.4, 1.0},
+calm plate pre-heat ∈ {1.2, 2.4 K}, the repository's own illustrated values) across 3 operating
+cases (day G=1000/wind 0.5, nominal night G=0/sky 10 °C, warm-sky night G=0/sky 29 °C, all at
+air 30 °C) — on the **existing** solver, and reports the paired absolute-bias advantage of V1 over
+the identical-geometry painted control V0P (`|bias_V0P| − |bias_V1|`; positive means V1 is closer
+to true ambient).
+
+In the day case the nominal advantage is **+1.4771 °C** (V0P +4.4796, V1 +3.0025). Combining all
+three illustrated V1 perturbations reverses it to **−1.5531 °C** (V1 +6.0327): the shield is now
+*further* from ambient than the painted box. At G=0 the solar-absorptance and plate-pre-heat terms
+vanish, so night V1 bias depends only on convection, not on `solar_factor` or pre-heat; the two
+night cases duplicate predictions by design and are controls, not independent evidence.
+
+This is an **illustrative** screen: the perturbation values are figures already in the repository,
+combined to expose a planning consequence, not measured bounds or a probability distribution. It
+supplies no confidence interval, joint-uncertainty bound, probability of superiority, or
+as-built model-agreement tolerance. Its output is a list of the assumptions (shield shading,
+convection boost, plate-to-air pre-heat) that must be **measured or more tightly justified** before
+any hardware preference — not a go/no-go on the shield. Reproduce with
+`python -m analysis.matched_control_sensitivity --out <fresh-path>.csv`. Same status as every other
+number here: **SIMULATION / pending lab data.**
