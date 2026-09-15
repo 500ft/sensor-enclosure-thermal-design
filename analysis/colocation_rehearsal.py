@@ -101,6 +101,30 @@ class CollisionError(RuntimeError):
     """Inputs and outputs collide; nothing was touched."""
 
 
+# The names generation writes into out_dir (rehearsal.csv/.metadata.json) and the names rehearse
+# produces there (rehearsal.json, snapshot/). snapshot() guards the rehearse step, but generation
+# calls write_inputs() into out_dir BEFORE rehearse() runs, so its own refusal must happen first.
+REHEARSAL_ARTIFACTS = ("rehearsal.csv", "rehearsal.metadata.json", "rehearsal.json", "snapshot")
+
+
+def require_free_output(out_dir: Path) -> None:
+    """Refuse (before ANY write) if out_dir already holds rehearsal inputs or outputs.
+
+    Generation writes rehearsal.csv/.metadata.json into out_dir, so this runs before write_inputs;
+    a refused rerun must not overwrite the previous run's inputs. Resolves symlinks so the same
+    occupied directory addressed directly or through a link is refused identically. Unrelated files
+    and a fresh/empty directory are left alone. snapshot() still enforces the same contract for the
+    rehearse step and for external-input replays. Review 3 (2026-09-16)."""
+    resolved = out_dir.resolve()
+    if not resolved.exists():
+        return
+    existing = [name for name in REHEARSAL_ARTIFACTS if (resolved / name).exists()]
+    if existing:
+        raise CollisionError(
+            f"{out_dir} already holds rehearsal artifacts ({', '.join(existing)}); "
+            "refusing before any write -- use a fresh run directory")
+
+
 def run_intake(csv_path: Path, meta_path: Path) -> tuple[int, dict | None, str]:
     p = subprocess.run([sys.executable, "-m", "analysis.colocation_intake", str(csv_path), "--metadata", str(meta_path)],
                        cwd=ROOT, capture_output=True, text=True)
@@ -175,10 +199,11 @@ def main(argv=None) -> int:
     if (a.csv is None) != (a.metadata is None):
         ap.error("--csv and --metadata go together")
     known = None
-    if a.csv is None:
-        rows, metadata, known = generate(datetime(2026, 1, 1, tzinfo=timezone.utc))
-        a.csv, a.metadata = write_inputs(rows, metadata, a.out_dir)
     try:
+        if a.csv is None:
+            require_free_output(a.out_dir)              # refuse BEFORE generation writes anything
+            rows, metadata, known = generate(datetime(2026, 1, 1, tzinfo=timezone.utc))
+            a.csv, a.metadata = write_inputs(rows, metadata, a.out_dir)
         rep = rehearse(a.csv, a.metadata, a.out_dir, known)
     except IntegrityError as e:
         print("INTEGRITY FAILURE:", e); return 4
