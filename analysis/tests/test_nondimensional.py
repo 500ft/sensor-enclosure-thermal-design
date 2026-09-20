@@ -69,7 +69,7 @@ class CollapseIsRegimeDependentTests(unittest.TestCase):
 
     def setUp(self):
         self.samples = list(ND.doe_samples(TAIR, DTSKY, EPS))
-        self.m = ND.collapse_metric([(tf, tl) for _, tf, tl in self.samples], DTSKY)
+        self.m = ND.collapse_metric([(tf, tl) for _, tf, tl, _ in self.samples], DTSKY)
 
     def test_doe_is_full_factorial_and_nonempty(self):
         self.assertEqual(self.m["n"], 1944)                    # 3*3*2*2*3*3*3*2
@@ -88,3 +88,46 @@ class CollapseIsRegimeDependentTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RegimeDiagnosticTests(unittest.TestCase):
+    """W3 diagnostic mode: regime labels are set by mechanism, the CSV is deterministic, defaults
+    are never mutated, and near-zero bias never yields a meaningless relative residual."""
+
+    def test_regime_labels_follow_the_documented_mechanism_bins(self):
+        self.assertEqual(ND.regime(-0.01, DTSKY), "radiation_dominated")   # sub-ambient
+        self.assertEqual(ND.regime(0.02, DTSKY), "near_zero")              # 0.4 degC
+        self.assertEqual(ND.regime(0.3, DTSKY), "solar_driven")            # 6 degC
+        self.assertEqual(ND.regime(1.5, DTSKY), "high_nonlinearity")       # 30 degC
+
+    def test_every_doe_point_gets_exactly_one_regime_and_all_four_occur(self):
+        labels = [ND.regime(tf, DTSKY) for _, tf, _, _ in ND.doe_samples(TAIR, DTSKY, EPS)]
+        self.assertEqual(len(labels), 1944)
+        self.assertEqual(set(labels), {"solar_driven", "near_zero", "radiation_dominated", "high_nonlinearity"})
+
+    def test_doe_is_deterministic_and_does_not_mutate_model_defaults(self):
+        before = [(v.vid, v.alpha, v.solar_factor, v.conv_boost, v.q_internal) for v in model.build_variants()]
+        a = [(tf, tl) for _, tf, tl, _ in ND.doe_samples(TAIR, DTSKY, EPS)]
+        b = [(tf, tl) for _, tf, tl, _ in ND.doe_samples(TAIR, DTSKY, EPS)]
+        self.assertEqual(a, b)                                            # same order, same values
+        self.assertEqual(before, [(v.vid, v.alpha, v.solar_factor, v.conv_boost, v.q_internal) for v in model.build_variants()])
+
+    def test_csv_blanks_relative_residual_near_zero_and_refuses_overwrite(self):
+        import csv, subprocess, sys, tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "doe.csv"
+            r = subprocess.run([sys.executable, "-m", "analysis.nondimensional", "--out", str(out)],
+                               cwd=Path(__file__).resolve().parents[2], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            rows = list(csv.DictReader(out.open()))
+            self.assertEqual(len(rows), 1944)
+            self.assertIn("Pi_G", rows[0]); self.assertIn("regime", rows[0])
+            for row in rows:
+                if abs(float(row["dT_full_c"])) < ND.NEAR_ZERO_C:
+                    self.assertEqual(row["rel_residual"], "", "near-zero bias must not report a relative residual")
+                else:
+                    self.assertNotEqual(row["rel_residual"], "")
+            r2 = subprocess.run([sys.executable, "-m", "analysis.nondimensional", "--out", str(out)],
+                                cwd=Path(__file__).resolve().parents[2], capture_output=True, text=True)
+            self.assertNotEqual(r2.returncode, 0)                        # refuses to overwrite

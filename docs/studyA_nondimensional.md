@@ -89,6 +89,12 @@ This matches the repo's own [matched-control sensitivity screen](../analysis/the
 never likely. The honest scientific contribution is therefore **the collapse domain and its
 boundary**, not a claim that bias always collapses.
 
+**Per-regime diagnostic (added 2026-09-21, W3):** `python -m analysis.nondimensional` now bins the
+DOE by mechanism (`nondimensional.regime`) and `--out` writes the groups, absolute/relative
+residuals and regime per point. Solar-driven: 0.10 / 0.46 °C (med / p95 abs); high-nonlinearity
+(ΔT>20 °C): 1.9 / 14.2 °C — the law's failure domain. See
+[research-direction-2026-09-21.md](research-direction-2026-09-21.md) §3.
+
 ## 6. Honest limits
 
 - **Radiation nonlinearity** — the linearised law is the reduction hypothesis; ground truth is the
