@@ -265,6 +265,25 @@ This document separates information explicitly reported by each paper from infor
 | Winter et al. (2025) | Alphasense NO2-B43F, Ox-B431, NO-B4, CO-B4 | BEACO2N node packaging not described in detail | Shows calibrated sensing can remain stable for three years while mechanical/electrical failures occur first |
 | Jin et al. (2026) | Thin-film Pt100 in copper spherical shell | Square plates, bowl-cover shrouds; CFD comparisons of plastic, wood, Fe-Ni alloy, and aluminum | Recent material-and-airflow geometry optimization with outdoor validation |
 
+
+## Direction-A Competitor Sources Added September 2026 (full text read)
+
+All six were read in full on 2026-09-22 (PDF/HTML; see `evidence/week-2026-09-21/day2.md`). None
+predicts enclosure bias before fabrication; internal dissipation is absent from four and wall
+conduction from all six. Two bibliographic corrections were made against the earlier abstract-level
+scan: the direct competitor is **Bernard et al. 2019** (not "Barbaresco"), and the PurpleAir T/RH
+paper is **Couzo, Valencia and Gittis 2024** (not "Cha"); Barkjohn et al. 2021 contains no own T/RH
+bias measurement.
+
+| Paper | Sensors | Reported material / geometry | Experimental contribution |
+|---|---|---|---|
+| Bernard et al. (2019) | PT100 in 12 naturally ventilated WMO shelters | Wood/plastic/steel/fiberglass/ABS-aluminum per type; per-type volume and surface tabulated; no thickness or optics | Two-coefficient energy-balance model (response time, radiation gain) fitted per built shelter; ~15 % (0.07 K) RMSE gain over empirical schemes |
+| Nakamura and Mahrt (2005) | HOBO thermistor in a Davis 7714 vs aspirated RTD | Multiplate 0.188 x 0.213 m plates, 7 cm interior; material not reported | Single forcing ratio X = Rad/(rho Cp T U) explains 98 % of daytime error; independent-year check 0.29 -> 0.13 C RMSE |
+| von Rohden et al. (2022) | Vaisala RS41 bare sensor + boom | Not reported | Lab dT(p, v) surface, u < 0.2 K (k=2); dT linear in irradiance, ~v^-b |
+| Barkjohn et al. (2021) | PurpleAir PA-II under a PVC cap | PVC cap only | US-wide PM2.5 correction; T/RH bias quoted secondhand only |
+| Couzo et al. (2024) | One PurpleAir PA-II vs Campbell 107 / Vaisala HMP45C | 85 x 85 x 125 mm white plastic shell, bottom open | +2.6 C / -17.4 % RH bias over 553 d; bias grows 1.8 -> 4.2 C with ambient temperature |
+| Ishizuka et al. (2012) | Heated model electronics casing, 14 thermocouples | 220 x 230 x 310 mm, 10 mm plastic wall; bottom inlet, variable side outlet | Internal air rise vs vent porosity, outlet height and 6-40 W; chimney-balance parameter X = Re beta^2/(1-beta) |
+
 ## Additional Literature Added in July 2026 (field reliability and data yield)
 
 | Paper | Sensors | Reported material / geometry | Experimental contribution |
@@ -359,3 +378,9 @@ The key geometry variables to record or control are:
 - Szewczyk et al. (2004): https://doi.org/10.1145/1031495.1031521
 - Barrenetxea et al. (2008): https://doi.org/10.1145/1460412.1460418
 - Feinberg et al. (2018): https://doi.org/10.5194/amt-11-4605-2018
+- Bernard et al. (2019): https://doi.org/10.3390/cli7020026
+- Nakamura and Mahrt (2005): https://doi.org/10.1175/JTECH1762.1
+- von Rohden et al. (2022): https://doi.org/10.5194/amt-15-383-2022
+- Barkjohn et al. (2021): https://doi.org/10.5194/amt-14-4617-2021
+- Couzo et al. (2024): https://doi.org/10.3390/atmos15040415
+- Ishizuka et al. (2012): https://doi.org/10.1088/1742-6596/395/1/012122
