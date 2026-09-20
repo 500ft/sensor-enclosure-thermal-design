@@ -113,7 +113,7 @@ DOE_AXES = dict(   # bounded physical ranges; alpha/A/Q spans cover printed AQ e
 
 
 def doe_samples(t_air_c: float, dt_sky: float, eps: float):
-    """Yield (params, theta_full, theta_linear) over the full-factorial daytime DOE.
+    """Yield (params, theta_full, theta_linear, groups) over the full-factorial daytime DOE.
 
     Daytime only (G>0, solar drive present) -- the regime the predictive claim targets and where
     the linearisation holds; night bias is small, radiation-dominated, and reported separately.
@@ -131,7 +131,28 @@ def doe_samples(t_air_c: float, dt_sky: float, eps: float):
                                              _inputs()["preheat_wind_halflife"], forced=False) * (p["g_solar"] / 1000.0)
         tf = theta_full(v, p["g_solar"], p["wind"], delta, t_air_c, dt_sky)
         tl = theta_linear(v, p["g_solar"], p["wind"], delta, t_air_c, dt_sky, eps)
-        yield p, tf, tl
+        yield p, tf, tl, groups(v, p["g_solar"], p["wind"], delta, t_air_c, dt_sky, eps)
+
+
+NEAR_ZERO_C, HIGH_NONLINEAR_C = 1.0, 20.0   # diagnostic bins, set by mechanism (see docs), not by fit
+
+
+def regime(theta_f: float, dt_sky: float) -> str:
+    """Diagnostic regime label for one DOE point, from the FULL-model bias dT = theta*dt_sky.
+
+    radiation_dominated: dT < 0 -- sky radiative loss exceeds absorbed solar + internal heat.
+    near_zero:           |dT| < 1 degC -- relative residual is meaningless here; use absolute.
+    high_nonlinearity:   dT > 20 degC -- the dropped T^4 terms grow; linear law drifts.
+    solar_driven:        everything else -- the regime where the five-group law holds.
+    """
+    d = theta_f * dt_sky
+    if d < 0:
+        return "radiation_dominated"
+    if abs(d) < NEAR_ZERO_C:
+        return "near_zero"
+    if d > HIGH_NONLINEAR_C:
+        return "high_nonlinearity"
+    return "solar_driven"
 
 
 def collapse_metric(pairs, dt_sky: float = 1.0) -> dict:
@@ -159,7 +180,7 @@ def main(argv=None) -> int:
     inp = _inputs()
     t_air, dt_sky, eps = inp["T_air"], inp["T_sky_offset"], inp["eps_surface"]
     samples = list(doe_samples(t_air, dt_sky, eps))
-    m = collapse_metric([(tf, tl) for _, tf, tl in samples], dt_sky)
+    m = collapse_metric([(tf, tl) for _, tf, tl, _ in samples], dt_sky)
     tripped = m["rel_p95"] > 0.03
     print(f"DOE points (daytime full-factorial): {m['n']}")
     print(f"collapse of full model onto the closed-form law: R^2={m['r2']:.5f}")
@@ -168,18 +189,32 @@ def main(argv=None) -> int:
           f"max={m['rel_max']*100:.2f}% (tail = near-zero-bias crossings)")
     print(f"kill criterion (p95 relative > ~3% => no universal clean law): "
           f"{'TRIPPED -- collapse is regime-dependent, not universal' if tripped else 'not tripped'}")
+    print("per-regime (abs residual degC; relative only where |dT|>=1):")
+    by = {}
+    for _, tf, tl, _ in samples:
+        by.setdefault(regime(tf, dt_sky), []).append((tf, tl))
+    for name in ("solar_driven", "near_zero", "radiation_dominated", "high_nonlinearity"):
+        if name in by:
+            r = collapse_metric(by[name], dt_sky)
+            print(f"  {name:<20} n={r['n']:4d}  abs med={r['abs_median_c']:.3f} p95={r['abs_p95_c']:.3f}"
+                  f"  rel med={r['rel_median']*100:.1f}% p95={r['rel_p95']*100:.1f}%")
     if a.out is not None:
         if a.out.exists():
             ap.error(f"{a.out} exists; write to a fresh path")
         a.out.parent.mkdir(parents=True, exist_ok=True)
         with a.out.open("w", newline="") as fh:
             w = csv.writer(fh)
-            w.writerow(["alpha", "solar_factor", "a_proj", "a_conv", "q_internal", "g_solar", "wind",
-                        "f_sky", "theta_full", "theta_linear", "rel_residual"])
-            for p, tf, tl in samples:
+            w.writerow(["alpha", "solar_factor", "a_proj", "a_conv", "q_internal", "g_solar", "wind", "f_sky",
+                        "Pi_G", "N_Q", "N_r", "Pi_delta", "theta_full", "theta_linear", "dT_full_c",
+                        "abs_residual_c", "rel_residual", "regime"])
+            for p, tf, tl, g in samples:
+                d = tf * dt_sky
                 w.writerow([p["alpha"], p["solar_factor"], p["a_proj"], p["a_conv"], p["q_internal"],
-                            p["g_solar"], p["wind"], p["f_sky"], f"{tf:.6f}", f"{tl:.6f}",
-                            f"{abs(tf-tl)/abs(tf):.6f}" if abs(tf) > 1e-9 else "nan"])
+                            p["g_solar"], p["wind"], p["f_sky"],
+                            f"{g['Pi_G']:.6f}", f"{g['N_Q']:.6f}", f"{g['N_r']:.6f}", f"{g['Pi_delta']:.6f}",
+                            f"{tf:.6f}", f"{tl:.6f}", f"{d:.6f}", f"{abs(tf-tl)*dt_sky:.6f}",
+                            f"{abs(tf-tl)/abs(tf):.6f}" if abs(d) >= NEAR_ZERO_C else "",   # blank = not meaningful
+                            regime(tf, dt_sky)])
         print("wrote", a.out)
     return 0
 
