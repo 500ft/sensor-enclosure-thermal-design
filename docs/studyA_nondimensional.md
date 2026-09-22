@@ -39,14 +39,28 @@ stay finite at night (`solar = 0`) by folding `N_Q` back into an absolute intern
 The lumped reduction assumes an **isothermal wall**, i.e. `Bi = h*t/k << 1`. That holds for metal
 meteorological screens; it does **not** hold for low-cost printed polymer enclosures:
 
-| Wall (3 mm) | k [W/mK] | Bi at h=7 | Bi at h=25 |
-|---|---|---|---|
-| PLA | 0.13 | 0.16 | 0.58 |
-| ABS | 0.17 | 0.12 | 0.44 |
-| PETG | 0.29 | 0.07 | 0.26 |
-| Aluminium | 205 | ~0 | ~0 |
+| Wall (3 mm) | k [W/mK] | Bi at h=7 | Bi at h=25 | source |
+|---|---|---|---|---|
+| PLA, printed 100 % infill | 0.182–0.267 | 0.08–0.12 | 0.28–0.41 | measured |
+| ABS, printed **through-layer** | 0.1039 | 0.20 | 0.72 | measured |
+| ABS, printed in-plane | 0.1664 | 0.13 | 0.45 | measured |
+| PETG, printed 100 % infill | 0.290 | 0.07 | 0.26 | measured |
+| PLA Aero (foaming filament) | 0.114 | 0.18 | 0.66 | measured |
+| PET-G at 25 % infill | 0.057–0.104 | 0.20–0.37 | 0.72–1.32 | measured |
+| Aluminium | 205 | ~0 | ~0 | handbook |
 
-`Bi ~ 0.1–0.6` means wall conduction is a **first-order effect** the classical (metal, `Bi≈0`)
+**Corrected 2026-09-22.** This table previously used *handbook bulk* conductivities (PLA 0.13, ABS
+0.17, PETG 0.29). Three independent labs measured **printed** PLA at 0.182–0.267 W/mK
+([`baraboi2026`](../literature/REVIEW_2026-09-22.md), `tychaniczkwiecien2025`, `rodriguez2023`), so
+k = 0.13 was too low and **inflated Bi by 40–105 %**. The conclusion is unchanged and in fact better
+supported, but the mechanism is different: the high-Bi end comes from **through-layer anisotropy**
+(`janek2026`: 0.1039 W/mK, anisotropy ratio 1.60), **reduced infill** (`lopes2023`: infill *pattern*
+alone moves effective k by 82 % at fixed density) and **foaming filaments** — not from a low bulk
+conductivity. Caveat none of these sources addresses: a 3 mm wall printed with perimeter shells may
+be near-solid regardless of the infill setting, so the low-infill rows are an upper bound on the
+effect for a real wall.
+
+Measured `Bi ~ 0.07–0.72` (up to ~1.3 if genuinely infilled) means wall conduction is a **first-order effect** the classical (metal, `Bi≈0`)
 shield literature structurally omits. This is a physically-grounded open axis independent of the
 literature scan, and it is where Study B's CHT check earns its keep (resolving the wall/air field
 the lumped model cannot).
