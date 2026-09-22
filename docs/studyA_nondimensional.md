@@ -95,6 +95,10 @@ residuals and regime per point. Solar-driven: 0.10 / 0.46 °C (med / p95 abs); h
 (ΔT>20 °C): 1.9 / 14.2 °C — the law's failure domain. See
 [research-direction-2026-09-21.md](research-direction-2026-09-21.md) §3.
 
+**Extension (2026-09-23, Study B design):** the groups this reduction lacks — wall Biot, vent
+Reynolds, vent area ratio, radiation nonlinearity, Rayleigh — are specified with inputs, limits and
+failure modes in [specs/study-b-cht/design.md](specs/study-b-cht/design.md) §7.
+
 ## 6. Honest limits
 
 - **Radiation nonlinearity** — the linearised law is the reduction hypothesis; ground truth is the
