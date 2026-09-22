@@ -354,6 +354,47 @@ The key geometry variables to record or control are:
 - cable-gland and connector locations;
 - enclosure volume and internal heat sources.
 
+
+## Model-Input, Printed-Material and Methodology Sources Added September 2026 (full text read)
+
+Twenty-seven sources added 2026-09-22 to close gaps that breadth in the shield literature could not
+fill: the **uncited physical constants in `thermal_bias.ASSUMPTIONS`**, the **measured properties of
+printed polymers** underpinning the Biot claim, the **origin papers** behind the quoted PurpleAir
+bias, and the **methodology** Study A and the pilot rely on. Twenty-five were read in full; two
+(`churchill1975`, `barcohen1984`) are paywalled and are recorded as **full-read pending with no
+content attributed**. See `literature/REVIEW_2026-09-22.md` for the thematic review and the
+model-input provenance table.
+
+| Paper | Sensors | Reported material / geometry | Experimental contribution |
+|---|---|---|---|
+| Berdahl and Martin (1984) | LBL spectral sky radiometer, pyrgeometer | n/a | Clear-sky emissivity as a function of dewpoint from 30,835 observations; **refutes a fixed sky-temperature depression** |
+| Formetta et al. (2016) | Eppley pyrgeometers +/-3 W/m2 | n/a | 10 clear-sky parameterizations benchmarked at 24 US stations; best RMSE <= 39 W/m2; recalibration halves it |
+| Defraeye et al. (2011) | CFD + review of measured correlations | Building facades, cube | **Provenance of `h = a + b*U`**: Juerges `4.0U + 5.6`, U <= 5 m/s, free-stream; U10-referenced slopes are 0.90-2.9 |
+| Berdahl and Bretz (1997) | Spectrophotometer + integrating sphere; emissometer | Roof coatings, shingles, paints | Measured alpha: black 0.95, white coatings 0.15-0.26; `h_r = 5.5 W/m2K` at eps 0.9; h_c dominates uncertainty |
+| Barreira et al. (2021) | Emissometer ASTM C1371 (+/-0.02) | Nine pigmented polymer films | Measured polymer emissivity **0.86-0.89**, below the usual 0.90-0.95 band; colour and gloss barely matter |
+| Levinson et al. (2010) | Numerical; ASTM E903/C1549/E1918 | Roofs, pavements | Solar absorptance is spectrum-dependent; **0.6 K of surface temperature per 10 W/m2** |
+| Tychanicz-Kwiecien et al. (2025) | Guarded heat flow, ASTM E1530 | PLA/PET-G/ABS, 40-100 % infill | Measured printed k and its ~30 % fall from 100 % to 40 % infill |
+| Janek and Hardon (2026) | Custom transient pulse, GUM k=2 | FDM ABS, 1.5 mm, two directions | **Through-layer 0.1039 vs in-plane 0.1664 W/mK, anisotropy 1.60** |
+| Baraboi et al. (2026) | Guarded hot plate, ASTM C177 | PLA, PLA Aero, PETG, PET-CF | Printed PLA **0.267**, PETG **0.290**, foaming PLA 0.114 W/mK with k=2 uncertainty |
+| Lopes et al. (2023) | ISO 9869-1 in an ASTM C1363 hotbox | PET-G, 12 patterns at 25 % infill | Pattern alone moves effective k by 82 % at fixed density |
+| Rodriguez et al. (2023) | DTC-25, ASTM E1530 | PLA, ABS, PEEK, TPU, ULTEM | Independent cross-lab check: printed PLA and ABS both 0.22 +/- 0.06 W/mK |
+| Morgan et al. (2017) | Gier-Dunkle reflectometer (LANL report) | Printed ABS and PLA coupons | Only measured emissivity of printed polymer: ~0.88-0.92, unchanged by build orientation |
+| Amendola et al. (2021) | Spectrophotometer 400-1300 nm | 25 PLA/ABS filaments, 0.23-0.58 mm | Thin printed walls are not optically opaque; brand/filler beats colour |
+| Kocar et al. (2024) | QUV ISO 4892-3, CIELAB | PLA, 20/60/100 % infill | Colour drifts Delta-E* 3.0-6.1 in 432 h; low infill drifts more |
+| Holder et al. (2020) | PurpleAir/AQY/RAMP vs FEM | PVC cap | **Origin of the 5.3 degC figure**: MBE +5.23 degC, RH -24.30 %, n = 5454 h |
+| Malings et al. (2020) | PurpleAir, NPM, RAMP vs BAM | Plastic shell | **Origin of the 2.7 degC figure**, reported without n, RMSE or named reference |
+| Shlipak et al. (2025) | Thermocouples + weather station | Al, FRP, ABS, PurpleAir PVC endcap | Measured PurpleAir enclosure **+1.88 degC mean, +6.48 degC daily max**; 1-5 W typical dissipation; night convergence shows solar dominates |
+| Jayaratne et al. (2018) | Plantower PMS1003 vs DustTrak/TEOM | Sealed field box | PM artefact flat below ~78 % RH then +80 % of reading by 89 % |
+| Samad et al. (2020) | Alphasense B4 vs Horiba/MLU | Sensor chamber | Published RH+T correction polynomials in ppb; 10-25 degC usable window |
+| Popoola et al. (2016) | Alphasense EC vs chemiluminescence | n/a | Temperature-driven NO baseline error ~250 ppb; effect is on baseline, not gain |
+| Buckingham (1914) | n/a | n/a | Pi theorem, `i = n - k`, and the non-uniqueness of the group set |
+| Sonin (2001) | n/a (MIT monograph, not peer-reviewed) | n/a | Modern Pi theorem; missing-variable and superfluous-variable cautions |
+| Ostrach (1953) | n/a (NACA report) | Flat plate, infinite medium | Free convection reduces to Gr and Pr; quarter-power law is regime-limited |
+| Churchill and Chu (1975) | **full-read pending** | vertical plate | Paywalled; identity verified, no content attributed |
+| Bar-Cohen and Rohsenow (1984) | **full-read pending** | parallel-plate channel | Paywalled; abstract scope only, no content attributed |
+| JCGM 100:2008 (GUM) | n/a (metrology guide) | n/a | Uncertainty budget incl. the shared-reference correlation case |
+| Arlot and Celisse (2010) | n/a (statistics survey) | n/a | Hold-out estimator and complexity penalisation for the K2 benchmark |
+
 ## Sources
 
 - Theisen et al. (2020): https://doi.org/10.5194/amt-13-4699-2020
@@ -384,3 +425,30 @@ The key geometry variables to record or control are:
 - Barkjohn et al. (2021): https://doi.org/10.5194/amt-14-4617-2021
 - Couzo et al. (2024): https://doi.org/10.3390/atmos15040415
 - Ishizuka et al. (2012): https://doi.org/10.1088/1742-6596/395/1/012122
+- Berdahl and Martin (1984): https://doi.org/10.1016/0038-092X(84)90144-0
+- Formetta et al. (2016): https://doi.org/10.5194/hess-20-4641-2016
+- Defraeye et al. (2011): https://doi.org/10.1016/j.enconman.2010.07.026
+- Berdahl and Bretz (1997): https://doi.org/10.1016/S0378-7788(96)01004-3
+- Barreira et al. (2021): https://doi.org/10.3390/s21061961
+- Levinson et al. (2010): https://doi.org/10.1016/j.solener.2010.04.018
+- Tychanicz-Kwiecien et al. (2025): https://doi.org/10.3390/ma18173950
+- Janek and Hardon (2026): https://doi.org/10.3390/metrology6030048
+- Baraboi et al. (2026): https://doi.org/10.3390/ma19132793
+- Lopes et al. (2023): https://doi.org/10.3390/polym15102268
+- Rodriguez et al. (2023): https://doi.org/10.3390/ma16237384
+- Morgan et al. (2017): https://www.osti.gov/biblio/1341825
+- Amendola et al. (2021): https://doi.org/10.1371/journal.pone.0253181
+- Kocar et al. (2024): https://doi.org/10.3390/ma17235908
+- Holder et al. (2020): https://doi.org/10.3390/s20174796
+- Malings et al. (2020): https://doi.org/10.1080/02786826.2019.1623863
+- Shlipak et al. (2025): https://doi.org/10.3390/s25154798
+- Jayaratne et al. (2018): https://doi.org/10.5194/amt-11-4883-2018
+- Samad et al. (2020): https://doi.org/10.3390/s20185175
+- Popoola et al. (2016): https://doi.org/10.1016/j.atmosenv.2016.10.024
+- Buckingham (1914): https://doi.org/10.1103/PhysRev.4.345
+- Sonin (2001): https://web.mit.edu/2.25/www/pdf/DA_unified.pdf
+- Ostrach (1953): https://ntrs.nasa.gov/api/citations/19930092147/downloads/19930092147.pdf
+- Churchill and Chu (1975), full-read pending: https://doi.org/10.1016/0017-9310(75)90243-4
+- Bar-Cohen and Rohsenow (1984), full-read pending: https://doi.org/10.1115/1.3246622
+- JCGM 100:2008 (GUM): https://www.bipm.org/documents/20126/2071204/JCGM_100_2008_E.pdf
+- Arlot and Celisse (2010): https://doi.org/10.1214/09-SS054
