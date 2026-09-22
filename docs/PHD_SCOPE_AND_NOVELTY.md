@@ -14,10 +14,10 @@ A literature check (2015–2026, cross-checked against the repo's 26-source matr
   22:1046), empirical correction to ~0.13 °C RMSE; worst case low-wind + high-irradiance.
 - Standard test methods already in the matrix: WMO No.8, Duvall 2021 (EPA 30-day protocol),
   ASTM D8406-22, CEN/TS 17660-1:2021.
-- **Energy-balance shelter models already reduce error to a few coefficients** — Barbaresco et al.
+- **Energy-balance shelter models already reduce error to a few coefficients** — Bernard et al.
   2019 (*Climate* 7(2):26): the direct methodological competitor.
 - CFD-fitted per-geometry correction curves — repo's Liu 2023, Jin 2026.
-- Low-cost AQ enclosure self-heating T/RH bias (~2.6 °C) — Barkjohn 2021, Cha 2024 (*Atmosphere*
+- Low-cost AQ enclosure self-heating T/RH bias (~2.6 °C) — Barkjohn 2021, Couzo 2024 (*Atmosphere*
   15:415) — documented and empirically corrected post-hoc.
 - Dimensionless heat-transfer framework (Biot/Nusselt/Reynolds) — textbook.
 
@@ -25,7 +25,7 @@ A literature check (2015–2026, cross-checked against the repo's 26-source matr
 - **No published dimensionless COLLAPSE of enclosure bias onto a-priori groups across
   geometry + material + ventilation + wind + irradiance simultaneously.** Existing models are
   empirical met-variable regressions (Nakamura–Mahrt), per-shelter coefficients fitted *after
-  building* (Barbaresco), or single-geometry CFD curves (Liu/Jin).
+  building* (Bernard), or single-geometry CFD curves (Liu/Jin).
 - **Internal-dissipation ratio as a design axis** — classical shields have ~no internal power; AQ
   enclosures have watts. No source combines self-heating + vent geometry + surface optics in one
   predictive scaling.
@@ -68,7 +68,7 @@ Three requirements to be PhD, not MS (all from the novelty check):
 2. Carries the **internal-dissipation, vent-Re, and wall-Biot** axes shield work omits.
 3. **Maps where the collapse fails** (radiation-dominated regime) rather than assuming universality.
 
-If the experimental collapse cannot beat Barbaresco's post-build coefficients on *prediction*, this
+If the experimental collapse cannot beat Bernard's post-build coefficients on *prediction*, this
 is honestly an MS design/ranking study and should be presented as such.
 
 ## 4. Reframed studies
@@ -86,12 +86,12 @@ The 26-source matrix is missing the sources this specific question must argue ag
 full ProConsList assessments (currently characterised at abstract level only — **full reads
 pending**, do not cite as assessed until read):
 
-1. **Barbaresco et al. 2019, *Climate* 7(2):26** — the direct methodological competitor (energy-
+1. **Bernard et al. 2019, *Climate* 7(2):26** — the direct methodological competitor (energy-
    balance shelter coefficients). *Highest priority.*
 2. **Nakamura & Mahrt 2005, JTECH 22:1046** — the canonical wind/shortwave shield-error correction.
 3. **GRUAN RS41 radiation error, AMT 15:383 (2022)** — nearest heat-transfer/ventilation-speed
    treatment (bare sensor).
-4. **Barkjohn 2021 / Cha 2024 (*Atmosphere* 15:415)** — the PurpleAir self-heating T/RH bias the
+4. **Couzo 2024 (Barkjohn 2021 quotes it secondhand) (*Atmosphere* 15:415)** — the PurpleAir self-heating T/RH bias the
    thesis rests on.
 5. **Vented-enclosure / electronics-cooling** (A_in/A_out optimum, buoyancy-driven vent flow) — the
    engineering base for the vent-Re / area-ratio axis.
@@ -103,3 +103,14 @@ No physical data, permission, or PI approval is created by this analysis. `EN-S0
 same external gates. This document is a scoping decision aid, not authority to run an experiment or
 claim a validated framework. **Do not claim a "framework across sensing systems" — Study A has
 already shown the collapse is not universal.**
+
+## Erratum (2026-09-22, after full-text reads)
+
+The 2026-09-16 novelty check above was abstract-level. Full-text reads on 2026-09-22 corrected two
+citations: the direct methodological competitor *Climate* 7(2):26 is **Bernard et al. 2019** (first
+author was mis-recorded as "Barbaresco"), and *Atmosphere* 15:415 is **Couzo, Valencia and Gittis
+2024** (mis-recorded as "Cha"). **Barkjohn et al. 2021 contains no own T/RH bias measurement**; the
++2.6 °C figure is Couzo 2024's. The names in §1/§5 above have been corrected in place; the
+substantive verdict is unchanged and is now source-level — see
+[COMPETITOR_MATRIX_2026-09-22.csv](COMPETITOR_MATRIX_2026-09-22.csv) and the six new
+`ProConsList/` entries (all full-read). The five "matrix gaps" in §5 are closed.

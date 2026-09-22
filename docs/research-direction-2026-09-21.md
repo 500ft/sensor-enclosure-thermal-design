@@ -36,7 +36,7 @@ that assumes A until K2 (below) has a defined benchmark.
   calibration error? *(Study A maps the analytical failure regime; the calibration link is
   untested.)*
 - **Competing explanation (must be tested, not dismissed):** a **post-build empirical correction**
-  (fitted energy-balance coefficients per built enclosure, Barbaresco et al. 2019 style; or a
+  (fitted energy-balance coefficients per built enclosure, Bernard et al. 2019 style; or a
   met-variable regression, Nakamura & Mahrt 2005 style) predicts as well or better at lower cost.
   **This is the K2 benchmark.** It must be implemented as an explicit comparator on the same
   held-out data before any pre-build claim.
@@ -100,7 +100,7 @@ systems. Claim levels: `simulated` (all of §3), `experimentally supported` (non
 
 PR #20's question is Direction B, and its literature review (Tarara 2007, Holden 2013, Theisen
 2020, Botero 2022, Deford 2025) is the correct base for B. It does not cite the Direction-A
-competitors (Barbaresco 2019, Nakamura & Mahrt 2005, Barkjohn/Cha) — that is Tuesday's work
+competitors (Bernard 2019, Nakamura & Mahrt 2005, Barkjohn/Couzo) — that is Tuesday's work
 (T1/T2), not an edit to #20. Merge/edit of #20 is the owner's call; if A is chosen, #20's
 "Question" section needs one added sentence naming the pre-build prediction aim and the post-build
 benchmark. Recorded here as a follow-up, not applied.
@@ -109,3 +109,54 @@ benchmark. Recorded here as a follow-up, not applied.
 
 No physical data, permission, hardware, geometry or funding is created by this record. `EN-S02`,
 `EN-R03`, `EN-S09B`, `EN-S11` stay blocked; CAD deferred; FEA a stub.
+
+## 9. Literature-to-experiment translation (T3, 2026-09-22)
+
+Each surviving gap from §2/§6 maps to one observable the pilot must record, the instrument or model
+input that supplies it, and the shortcut that is **not** allowed. Model inputs feed
+[`thermal_bias.ASSUMPTIONS`](../analysis/thermal_bias.py) entries currently marked
+`bounded`/`TODO-from-lab`; nothing below is measured yet.
+
+| Gap (group) | Observable to record | Instrument / model input | Not allowed |
+|---|---|---|---|
+| Internal dissipation (`N_Q`) | Electrical input power at the enclosure, and the fraction reaching the sensor zone | In-line power meter or shunt on the node supply (W, logged at cadence); sensor-zone vs electronics-zone temperature difference; replaces `Q_int_V0` / `Q_int_shielded` | Inferring `Q` from nominal board/datasheet power |
+| Vent flow (`Re_vent`, `A_vent/A_surface`) | Vent count, hydraulic diameter and open area; an airflow proxy at the vent (velocity or ΔP) *or* a declared CHT flow boundary | Calipers/drawing for geometry; hot-wire or thermal anemometer at a vent, or CHT (Study B) with the flow BC stated | Substituting ambient wind for vent velocity or vent Reynolds number |
+| Wall conduction (`Bi`) | Wall thickness and material conductivity for each printed variant | Calipers (mm); `k` from a traceable datasheet range for the *specific* filament, or a measured value; replaces the handbook `k` in `nondimensional.biot` | Treating the filament name/colour as conductivity evidence |
+| Optical (`alpha`, `eps`) | Solar absorptance and long-wave emissivity of each finish | Reflectance/emissivity measurement, or a bounded range with source; replaces `alpha_V0`, `alpha_shield`, `eps_surface` | Equating colour name with `alpha`/`eps` |
+| Solar / wind forcing (`Pi_G`, `h`) | Irradiance on the projected area and wind at sensor height, at the sample cadence | Pyranometer (W/m²) and anemometer (m/s) co-located at matched height; already required by [COLOCATION_PROTOCOL.md](COLOCATION_PROTOCOL.md) | Using a distant station's wind as the local `h` input |
+| Sky forcing (`N_r`, `f_sky`) | Sky/cloud condition; sky view of the sensor element | Sky notes at minimum; IR sky temperature if available; `f_sky` from geometry, declared per variant | Assuming a fixed 20 K clear-sky depression at night |
+| Failure boundary (SQ3) | Which regime each observation falls in (`nondimensional.regime` of the *as-built* prediction) | Computed from the inputs above **before** comparison; recorded with the prediction | Assigning regimes after seeing the residual |
+
+Done when every gap has an observable and a named instrument or model input; the pilot data
+contract (Thursday, R2) carries these as required columns. No threshold here changes the 24 h
+data-readiness criteria in the protocol.
+
+## 10. Competitor test (T2, 2026-09-22) — source-level, six full reads
+
+[COMPETITOR_MATRIX_2026-09-22.csv](COMPETITOR_MATRIX_2026-09-22.csv); per-source assessments in
+`ProConsList/` (`bernard2019`, `nakamura2005`, `vonrohden2022`, `barkjohn2021`, `couzo2024`,
+`ishizuka2012`), all read in full. The abstract-level scan of 2026-09-16 mis-cited two authors;
+see the erratum in [PHD_SCOPE_AND_NOVELTY.md](PHD_SCOPE_AND_NOVELTY.md).
+
+What the checked sources establish, stated as "not found in the checked sources," not "no one has
+done this":
+
+- **No checked source predicts enclosure bias before fabrication.** Bernard 2019 and von Rohden 2022
+  fit coefficients to the built object; Nakamura 2005 and Couzo 2024 are empirical corrections;
+  Ishizuka 2012's pre-build design equations are indoor, still-air, no solar.
+- **Internal power dissipation** is absent as a modelled term in Bernard, Nakamura, von Rohden and
+  Barkjohn; asserted-but-unmeasured in Couzo; present only in Ishizuka (indoor).
+- **Wall conduction / Biot** is absent in all six (lumped into a fitted surface loss in Ishizuka;
+  boom conduction included but not parameterised in von Rohden).
+- **Nakamura's `X = Rad/(ρ·Cp·T·U)` is already a single dimensionless forcing group that reaches
+  R² 0.98** for one shield. This project's `Pi_G` generalises `X` (absorptance, shading, area
+  ratio, radiation coupling); it is not a new idea, and the added groups (`N_Q`, `Bi`, `Re_vent`)
+  must earn their place on held-out data.
+- **Ishizuka's `X = Re·β²/(1−β)` chimney parameter** is the concrete basis for the vent-flow
+  group in Study B; its constants are apparatus-specific and do not transfer.
+
+**K2 benchmark, now defined:** a Bernard-style two-coefficient energy-balance fit (response time +
+radiation gain) per built enclosure, *and* a Nakamura-style single-group regression, both fitted on
+the pilot's own data. The pre-build route succeeds only if it predicts **held-out** printed
+geometries at least as well after counting parameters on both sides. The project is unsuccessful if
+it merely recreates an after-the-fact correction with new names.
