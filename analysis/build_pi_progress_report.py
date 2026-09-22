@@ -207,7 +207,7 @@ def cell(text, style="TableCell"):
     return Paragraph(escape(text), STYLES[style])
 
 
-def table(data, widths, header=True, font_size=None, row_colors=True):
+def table(data, widths, header=True, row_colors=True):
     rows = []
     for row_index, row in enumerate(data):
         style_name = "TableHead" if header and row_index == 0 else "TableCell"
@@ -234,8 +234,6 @@ def table(data, widths, header=True, font_size=None, row_colors=True):
         for idx in range(start, len(rows)):
             if (idx - start) % 2 == 1:
                 commands.append(("BACKGROUND", (0, idx), (-1, idx), colors.HexColor("#F8FAFC")))
-    if font_size:
-        commands.append(("FONTSIZE", (0, 0), (-1, -1), font_size))
     t.setStyle(TableStyle(commands))
     return t
 
