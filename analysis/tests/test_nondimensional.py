@@ -61,11 +61,11 @@ class ReductionAccuracyTests(unittest.TestCase):
         self.assertGreaterEqual(err_large, err_small)          # absolute reduction error grows with bias
 
 
-class CollapseIsRegimeDependentTests(unittest.TestCase):
-    """The central, honest Study A finding: the collapse is GOOD in the median/solar-driven regime
-    and FAILS in the low-bias/radiation-dominated tail -- so there is no single universal clean law
-    at the preregistered ~3% band (the project's own kill criterion). This is a result to report,
-    not a bug to hide."""
+class LinearisationErrorTests(unittest.TestCase):
+    """CORRECTED 2026-09-24. These tests measure how well the LINEARISED closed form approximates
+    the nonlinear solver -- approximation error. They do NOT test dimensionless similarity, and an
+    exceeded threshold does not falsify a dimensionless representation (see ExactBalanceTests).
+    Previously named CollapseIsRegimeDependentTests and read as a scientific kill criterion."""
 
     def setUp(self):
         self.samples = list(ND.doe_samples(TAIR, DTSKY, EPS))
@@ -74,10 +74,10 @@ class CollapseIsRegimeDependentTests(unittest.TestCase):
     def test_doe_is_full_factorial_and_nonempty(self):
         self.assertEqual(self.m["n"], 1944)                    # 3*3*2*2*3*3*3*2
 
-    def test_median_collapse_is_tight_but_the_tail_trips_the_kill_criterion(self):
+    def test_median_approximation_is_tight_but_the_tail_exceeds_the_threshold(self):
         self.assertLess(self.m["rel_median"], 0.05)            # median: good collapse (~a few %)
         self.assertLess(self.m["abs_median_c"], 0.5)           # median absolute error < 0.5 degC
-        self.assertGreater(self.m["rel_p95"], 0.03)            # p95 tail: kill criterion TRIPPED
+        self.assertGreater(self.m["rel_p95"], 0.03)            # p95 tail exceeds the 3% approximation band
         self.assertGreater(self.m["r2"], 0.90)                 # overall R^2 still high despite tail
 
     def test_absolute_error_is_bounded_even_where_relative_error_explodes(self):
@@ -88,6 +88,41 @@ class CollapseIsRegimeDependentTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExactBalanceTests(unittest.TestCase):
+    """The correction that matters: the EXACT nonlinear dimensionless balance is consistent with the
+    same solver across the whole DOE. Dimensionless representation is therefore not falsified by the
+    linearisation residual -- what degrades is the approximation, not the similarity."""
+
+    def test_exact_nonlinear_balance_holds_across_the_whole_doe(self):
+        from dataclasses import replace
+        inp = ND._inputs()
+        worst = 0.0
+        base = model.build_variants()[0]
+        for p, tf, tl, g in ND.doe_samples(TAIR, DTSKY, EPS):
+            v = replace(base, alpha=p["alpha"], solar_factor=p["solar_factor"], a_proj=p["a_proj"],
+                        a_conv=p["a_conv"], q_internal=p["q_internal"], f_sky=p["f_sky"],
+                        conv_boost=1.0, eps=EPS)
+            delta = 0.0
+            if p["solar_factor"] < 1.0:
+                delta = model.shield_air_preheat(p["wind"], inp["shield_air_preheat_calm"],
+                                                 inp["preheat_wind_halflife"], forced=False) * (p["g_solar"] / 1000.0)
+            worst = max(worst, abs(ND.balance_residual(v, p["g_solar"], p["wind"], delta, TAIR, DTSKY, tf)))
+        self.assertLess(worst, 1e-6, f"exact balance residual {worst:.2e} exceeds solver tolerance")
+
+    def test_nonsingular_form_is_defined_when_sky_equals_or_exceeds_ambient(self):
+        # dt_sky = 0 makes the D-normalised form singular; the T0-normalised form must still work
+        v = model.build_variants()[0]
+        for t_sky in (TAIR, TAIR + 5.0):       # sky equal to, then warmer than, ambient
+            r = ND.balance_residual_nonsingular(v, 0.0, 1.0, 0.0, TAIR, t_sky)
+            self.assertLess(abs(r), 1e-6, f"nonsingular residual {r:.2e} at t_sky={t_sky}")
+
+    def test_doe_uses_one_emissivity_for_both_sides(self):
+        # regression for the 2026-09-24 bug: theta_full ignored the eps argument
+        a = [tf for _, tf, _, _ in ND.doe_samples(TAIR, DTSKY, 0.9)]
+        b = [tf for _, tf, _, _ in ND.doe_samples(TAIR, DTSKY, 0.5)]
+        self.assertNotEqual(a, b, "theta_full must respond to the eps argument")
 
 
 class RegimeDiagnosticTests(unittest.TestCase):

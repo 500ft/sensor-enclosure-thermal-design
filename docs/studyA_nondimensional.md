@@ -88,13 +88,38 @@ the lumped model cannot).
 | bias > 3 °C | 1076 | 0.21 °C | 4.0 °C | 2.1% | 12.3% |
 | solar-driven θ>0.3 | 723 | 0.27 °C | 6.3 °C | 2.4% | 11.9% |
 
-Overall `R² = 0.972`. **Verdict: the p95 relative residual (64% across the DOE; still 12–24% even
-for meaningful bias) trips the kill criterion.** There is no single universal clean law at the
-preregistered band. What *does* hold:
+Overall `R² = 0.972`.
+
+> ### Corrected verdict (2026-09-24)
+>
+> **The earlier verdict — "the kill criterion is tripped, there is no universal clean law" — was
+> wrong, and is withdrawn.** That comparison was between a *linearised* closed form and the
+> *nonlinear* solver **derived from the same heat balance**. It therefore measures **approximation
+> error**, not the validity of a dimensionless representation.
+>
+> The **exact nonlinear dimensionless balance**
+>
+> `Pi_G + Pi_Q = theta - d + N_r/(4*tau) * { f*[(1+tau*theta)^4 - (1-tau)^4] + (1-f)*[(1+tau*theta)^4 - (1+tau*d)^4] }`
+>
+> was derived and evaluated at **all 1,944 DOE points**: maximum absolute residual **5.478e-9**,
+> i.e. solver tolerance (`nondimensional.balance_residual`; regression test
+> `ExactBalanceTests`). **Dimensionless similarity is not falsified by anything in this module.**
+>
+> Correct statement: *the linearised closed form exceeds the selected approximation-error threshold
+> in parts of the illustrative DOE; the exact nonlinear dimensionless balance remains consistent
+> with the original model. Physical accuracy and cross-design transfer are untested.*
+>
+> Three further corrections: the 3 % **relative** band is a **selected approximation threshold**, not
+> a measured model uncertainty or a scientific kill criterion; **absolute °C** is the primary metric
+> because relative error is ill-conditioned near zero bias; and the regime bins are **output-based
+> diagnostics of a known solver**, not a prospective field rule. The DOE/threshold exercise is
+> labelled **exploratory** — no dated pre-run record supports calling it preregistered.
+
+What the approximation results *do* show:
 
 - **Median collapse is tight** (~2–4% relative, ~0.23 °C absolute) — the solar-driven regime is
   well-predicted by the five groups.
-- **The tail failure is physical, not numerical:** it concentrates at (a) the `theta ≈ 0` crossing,
+- **The tail behaviour is an approximation limit, not a similarity failure:** it concentrates at (a) the `theta ≈ 0` crossing,
   where relative error is meaningless (absolute error stays bounded, p95 ≤ ~5 °C), and (b) large
   `dT` where radiation nonlinearity (dropped by the linearisation) grows.
 

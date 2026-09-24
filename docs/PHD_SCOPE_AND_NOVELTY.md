@@ -114,3 +114,42 @@ author was mis-recorded as "Barbaresco"), and *Atmosphere* 15:415 is **Couzo, Va
 substantive verdict is unchanged and is now source-level — see
 [COMPETITOR_MATRIX_2026-09-22.csv](COMPETITOR_MATRIX_2026-09-22.csv) and the six new
 `ProConsList/` entries (all full-read). The five "matrix gaps" in §5 are closed.
+
+## Erratum 2 (2026-09-24) — novelty narrowed, and two arguments withdrawn
+
+An independent critique, **verified numerically before acceptance**, corrected three things here.
+
+**1. Air-STORM (`shlipak2025`) is a direct competitor and was missing from the competitor matrix.**
+It is a transient forward model of an air-quality enclosure driven by material properties, weather
+and **internal heat generation**, experimentally evaluated and intended for design planning *before*
+build. It therefore **overlaps the broad "forward modelling of an enclosure" claim** made above.
+Now added to [COMPETITOR_MATRIX_2026-09-22.csv](COMPETITOR_MATRIX_2026-09-22.csv).
+
+**2. Categorical novelty statements are withdrawn.** Claims that enclosure forward modelling, wall
+conduction or internal heat generation have *never* been addressed are **not supportable**. The
+statement "nobody has measured the watts" is replaced by the bounded form: *no source located in
+this repository's search record reports a measured internal dissipation for a low-cost air-quality
+enclosure together with an attribution of the observed T/RH bias to it.* The remaining gap is
+**narrower than previously written and provisional** until a documented broader search.
+
+**Narrowed working question:** *can design-known geometry, characterised finish/material properties
+and measured electronics power predict ambient T and RH measurement error on a previously untested
+printed enclosure, and what accuracy is added by resolving wall conduction, ventilation and
+transient response?* Air-STORM's endpoint is enclosure **temperature**; this project's endpoint is
+calibrated **measurement bias**, with quantified uncertainty and a transfer test. "Previously
+untested" must be defined explicitly — no calibration on that *unit*, on that *geometry*, or no
+measurement after fabrication are three different claims. Post-print dimensional inspection can
+support an *as-built* prediction but cannot retroactively become a before-fabrication test.
+
+**3. The "PhD if it beats Bernard, MS otherwise" verdict is withdrawn.** Degree scope is an academic
+judgement, not a research criterion. The criteria are **useful transfer, accuracy, calibration cost
+and falsifiable claims**. Also: a per-enclosure fitted baseline cannot simultaneously use
+target-enclosure calibration data *and* be called a no-target-data comparator — it is a **calibrated
+reference performance level**, and must be labelled as such. Counting named dimensionless groups is
+**not** a complexity penalty; audit actual calibrated parameters, empirical closures and property
+measurements instead.
+
+**Superseded elsewhere:** the Study A "no universal law" verdict in §2 is **withdrawn** — see the
+corrected verdict in [studyA_nondimensional.md](studyA_nondimensional.md). The exact nonlinear
+dimensionless balance holds to solver tolerance (max residual 5.478e-9 over 1,944 points), so
+**dimensionless similarity was never falsified**; what exceeded threshold was linearisation error.
