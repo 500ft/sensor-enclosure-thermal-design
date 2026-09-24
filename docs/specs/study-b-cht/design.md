@@ -162,3 +162,132 @@ and Nakamura benchmarks defined in the direction record §10.
   §5 contract; host availability checked at run time, bounded deadlines, artifact inspected — never
   completion inferred from a launch call.
 - `EN-S02`, `EN-R03`, `EN-S09B`, `EN-S11` unchanged; all CAD tasks remain `deferred`.
+
+---
+
+## 9. Verification repairs and identifiability (WP3, 2026-09-24)
+
+The §3 hierarchy and §4 benchmarks below §9 stand, **with these corrections**. They came from the
+2026-09-24 critique; several are defects in what §3–§4 originally asserted.
+
+### 9.1 Three different things §3 conflated
+
+| Layer | What it establishes | What it cannot |
+|---|---|---|
+| **Numerical verification** | the equations are solved correctly (mesh, residual, conservation) | that the equations describe this enclosure |
+| **Comparison to an empirical correlation** | agreement with a *fitted* published relation within its validity range | correctness — a correlation is not an exact solution |
+| **Physical validation** | agreement with measurement | anything, until Study C exists |
+
+**Correction:** B2 (Churchill–Chu) was written as though the correlation were an exact answer with
+"10 % (correlation scatter)". It is **not an analytical solution**, and 10 % is a **proposed check
+value**, not a universal scatter. Its validity range must be read from the source — which this repo
+has **not** done (`churchill1975` is still **full-read pending**). Until it is read, B2 is a
+**trend check**, not a tolerance test.
+
+### 9.2 Do not count convection twice
+
+Either **resolve external flow** or **impose an external film coefficient** at a given interface —
+**never both at the same surface**. The original §2 listed "wind/convective coefficient **or**
+resolved external flow"; the ambiguity is removed here: the choice is per-interface, declared in the
+input ledger, and a surface carrying a resolved boundary layer must not also carry an `h`.
+
+### 9.3 Mesh convergence — the stated rule was insufficient
+
+"≥3 levels; sensor ΔT change between the two finest < 0.1 °C" is **not** a bound on mesh error.
+Required instead:
+- ≥3 meshes with **recorded refinement ratios**, solver tolerance, and the monitored outputs;
+- monitor **vent flow, sensor temperature and heat flux** — not sensor ΔT alone;
+- **check for non-monotonic convergence**; a small last-step difference with an oscillating
+  sequence does not bound anything;
+- **time-step sensitivity** for transient runs, and **domain-size sensitivity** for external flow.
+
+### 9.4 Energy-residual normalisation can divide by zero
+
+"Net residual < 1 % of total applied heat" **fails at `G = 0` and `Q = 0`**, and hides imbalance
+where large flows nearly cancel. Declare the normalisation explicitly: use a **fixed reference
+scale** (e.g. the maximum of |applied heat| and a declared floor based on the radiative exchange
+magnitude), and report the **absolute** residual in W alongside the normalised one.
+
+### 9.5 Limiting cases — conditions, not enforced trends
+
+- **"Open vent lowers ΔT" is withdrawn as an unconditional check.** Increased exchange with ambient
+  *tends* to reduce the absolute offset **in a specified heat balance**, but an opening can also
+  admit radiation, redirect flow, or **warm a cold sensor**. Test it as a **conditional** statement
+  with its conditions stated, and record a violation as information rather than a failure.
+- **`k → ∞` recovers the lumped model only if nodes, areas, boundary conditions and couplings also
+  match.** It does not equate enclosed air with wall temperature. B4 must declare that mapping or it
+  is not a valid check.
+- A **vent-flow sign check is necessary but not sufficient.** Before the solver's flow capability is
+  called verified, add a **quantitative independent flow/heat-transfer benchmark** with traceable
+  boundary conditions.
+
+### 9.6 Target leakage — the trap in the W2 group list
+
+`Re_vent` and `Ra` computed from **solved** velocity or temperature fields are **diagnostics or
+implicit model variables**, not pre-build inputs. Likewise a **measured** vent velocity from the
+target enclosure.
+
+**Rule:** a before-build prediction may use only quantities available *before* that enclosure is
+built and measured — design geometry, independently characterised material and electronics
+properties, and environmental forcing. If a group needs a solved or measured target quantity, the
+**predictive closure that supplies it must be defined, with its own uncertainty**, and that closure
+is part of the model being tested. Undisclosed use of a target-derived quantity invalidates the
+no-target-calibration contest (A) in the direction record's K2.
+
+### 9.7 Parameter-identification ledger (required before adding groups)
+
+One temperature trace primarily constrains **combinations** — e.g. `alpha·phi·A_proj` and
+`h·A_conv` — not their factors. Adding groups without breaking that degeneracy adds unidentifiable
+parameters.
+
+| Parameter | Observable that constrains it | Confounded with | How to break it |
+|---|---|---|---|
+| `alpha·phi·A_proj` | daytime ΔT vs irradiance | `h·A_conv` | shade/unshade at fixed power (**I2**) |
+| `h·A_conv` | ΔT vs wind, and decay after a step | `alpha·phi·A_proj` | power step at fixed solar (**I1**) |
+| `Q` reaching the sensor | ΔT response to a documented load change | wall/mount conduction path | controlled resistive load at the source location (**I1**) |
+| `eps`, `f_sky` | night ΔT and sky condition | each other, and `Q` | independent `eps` measurement + sky/long-wave logging |
+| wall `k`, `t` (Biot) | inner vs outer wall ΔT | contact and coating resistance | direct wall-gradient probes (§1 node map) |
+| vent effect | ΔT vs inspected open area | material, source location | **I3** at fixed material and source |
+
+**Rule:** characterise properties independently and use power/shade/flow interventions to break
+confounding **before** adding a group. A group that no observable can constrain is not a model
+input, it is a fitted parameter.
+
+### 9.8 Biot is a screening ratio, not a verdict
+
+`Bi = h·t/k` screens conduction resistance. It is **not** proof of a novel effect, and a low `Bi`
+does **not** make separate plates or a sensor-to-wall gap isothermal. State the characteristic
+length, the inner and outer film conditions, the radiation contribution, and the **conduction
+direction**. Distinguish **through-wall** gradients from **plate-to-plate** and **sensor-to-wall**
+gradients — they are different problems. Use the **actual printed wall structure**: coupon infill
+values need not describe a thin perimeter-shell wall.
+
+### 9.9 Time response before transient CHT
+
+Specify a **step-response measurement** and a **candidate reduced thermal network** before
+committing to full transient CHT. Steady-state comparison requires a **declared quasi-steady
+window**; where forcing changes faster than the thermal response, a steady comparison is invalid.
+Retain transient records for separate analysis rather than averaging them away.
+
+### 9.10 Solar is directional
+
+Global horizontal irradiance × an arbitrary sun-facing area is **not** a general directional load.
+Either declare orientation with direct/diffuse/reflected components, or label the scalar solar term
+an **effective empirical input** and carry it as such. Keep **shortwave transmission** separate from
+**long-wave re-radiation** so the two are not double-counted — relevant here because printed walls
+are **not** optically opaque in the shortwave band (`amendola2021`).
+
+### 9.11 Closures stay bands until identified
+
+Do not replace the current `h` intercept with a literature value and call it validated: check shape,
+wind reference height, direction, turbulence and regime first. **Dewpoint alone does not measure
+effective sky temperature under cloud** — use measured long-wave where available, or a documented
+sky model **with cloud information and explicit uncertainty**. Uncertain closures are carried as
+**bands**, notpoint values, until an intervention identifies them.
+
+### 9.12 Acceptance for Study B (replaces the §3 acceptance line)
+
+A **verification matrix** with one row per check giving: expected value or trend, **applicability
+conditions**, independent source, tolerance **with its rationale**, and the fail/**unverified**
+state. No check passes on a converged residual or an attractive contour plot alone. Any check
+lacking an expected value is `accepted: null` (unverified), never a pass.
