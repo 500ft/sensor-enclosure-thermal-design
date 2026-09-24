@@ -29,14 +29,40 @@ The literature review established two things that change the design:
 
 So the experiment is designed around a **discriminator**, not just a comparison:
 
-> **D1 (night/day contrast):** self-heating produces a bias floor that persists through the dark
-> hours; solar loading does not. The campaign must therefore span a full diurnal cycle *and* record
-> internal power continuously, so the two mechanisms can be separated rather than assumed.
+> ### Corrected 2026-09-24 — the night/day contrast does **not** identify self-heating
 >
-> **D2 (powered/unpowered contrast, if the owner permits a fourth arm):** the same enclosure logged
-> with its electronics powered versus externally logged and internally unpowered isolates the
-> dissipation term directly. This is the single most decisive measurement available and is not in
-> the literature. Recorded here as a **proposed option**, not a scheduled arm.
+> The previous D1 claimed a self-heating floor persists at night while solar loading does not.
+> **That is false.** At night, positive electronics heating can be exactly offset by outward
+> long-wave loss, so **zero net bias does not imply zero dissipation.**
+>
+> Verified counterexample in this model (V1 geometry, `eps` 0.9, `A_conv` 0.020 m², `f_sky` 0.05,
+> `T_air` 30 °C, `T_sky` 10 °C): `Q = eps*sigma*A_conv*f_sky*(303.15^4 - 283.15^4)` = **0.102972 W**
+> returns a night bias of **-1.2e-8 °C** — a nonzero heat source with essentially zero bias. (A
+> calculated counterexample, not an observation.) Note also that "the shell traps heat" and "the
+> electronics generate heat" are **compatible**: one is a resistance, the other a source.
+>
+> **D1 (revised, correlational):** night/day observations *constrain the combined heat balance*.
+> Causal attribution requires controlled interventions plus weather and heat-path measurement. An
+> uncontrolled day/night association is **never** to be labelled isolation of the dissipation term.
+>
+> **D2 (promoted to the FIRST mechanism experiment, no longer optional):** a **controlled power
+> intervention** is the only design here that identifies the dissipation term. Requirements:
+> 1. Temperature probe independently powered, independently logged, fixed in place.
+> 2. **At least two documented load states** — or a controlled resistive load at the same
+>    heat-source location for a purely thermal test.
+> 3. Log **actual voltage and current** with synchronised temperatures — never rated watts.
+> 4. **Hold airflow fixed.** Powering down a PM unit may also stop its fan, changing heat *and*
+>    ventilation — that is a confounded test, not a heat-only test.
+> 5. **Randomise/counterbalance load order, repeat in blocks.** Derive the settling rule from a
+>    step-response test (propose ≥5 estimated dominant time constants), record transitions rather
+>    than silently dropping inconvenient intervals.
+> 6. Begin under **controlled radiative exposure**, then repeat outdoors. Log sky/long-wave
+>    information: **`G = 0` is not zero net radiation.**
+> 7. Separate **measured electrical input**, **total enclosure heat release**, and **heat reaching
+>    the sensor**. The last needs a heat-path model or identification — a power meter cannot give it.
+>
+> Estimand: **°C per W**, with an intervention table naming what changes, what is held fixed, the
+> likely confounders and the required measurements.
 
 `shlipak2025` also found internal air, wall and battery temperatures agree within **0.25 °C even at
 peak solar loading**, which (a) supports the lumped treatment and (b) means a single well-placed
@@ -178,13 +204,23 @@ first-order approximation, and effective degrees of freedom above about 10. Thos
 **demonstrated, not assumed**. If one Type B component dominates with few degrees of freedom,
 `k = 2` does not deliver 95 %.
 
-### R3.3 The shared-reference correlation — the anti-conservative trap
+### R3.3 The shared-reference correlation — direction depends on the measurand
 
-GUM §5.2.2's worked example **is this pilot's design**: ten resistors each calibrated against *the
-same* standard. Because the correlation coefficient is `r = +1`, the uncertainties add **linearly**,
-not in quadrature — `1 Ω` rather than `0.32 Ω`, and the Guide states flatly that the quadrature
-answer "is incorrect". **Ignoring a shared reference understates the uncertainty by roughly 3× in
-the Guide's own example, i.e. it errs anti-conservatively.**
+**Corrected 2026-09-24.** The previous text cited GUM §5.2.2 (ten resistors in **series**) and
+concluded that ignoring a shared reference is "anti-conservative by ~3×". That transplants a **sum**
+onto a **difference** and is wrong here. The borrowed threefold factor is withdrawn.
+
+For simultaneous readings `A`, `B` against the **identical** reference reading `R`:
+`b_A = A − R`, `b_B = B − R`, so **`b_A − b_B = A − B`: the shared reference cancels exactly** in
+that contrast. Generally `Var(b_A − b_B) = Var(b_A) + Var(b_B) − 2·Cov(b_A, b_B)`, so **ignoring a
+positive common-reference covariance OVERSTATES the uncertainty of a difference** (for a sum or mean
+it understates it). The sign of the measurement equation decides the direction.
+
+Consequences for this pilot:
+- **Difference between arms** (the primary comparison): the shared-reference term cancels exactly
+  *for simultaneous readings of the same reference*. Location mismatch, per-probe calibration and
+  non-identical timestamps do **not** cancel and must be carried.
+- **Absolute bias per arm:** reference uncertainty enters **in full** and does not cancel.
 
 Here, **one reference instrument serving V0, V0P and V1 correlates every cross-variant comparison.**
 Two consequences:
@@ -195,8 +231,13 @@ Two consequences:
 - For an **absolute bias per arm**, the reference uncertainty enters in full and does **not** cancel.
 
 **Adopted treatment (GUM §5.2.4):** re-parameterise so the shared reference enters **once, as an
-explicit independent input**, rather than estimating pairwise covariances. The Guide gives a
-thermometer as its own example of this case.
+explicit independent input**, rather than estimating pairwise covariances. This recommendation is
+retained; only the "anti-conservative" framing is withdrawn.
+
+Each component gets a **measurement equation, distribution, evaluation method, sensitivity
+coefficient and correlation basis**. Type A/B describes *how uncertainty was evaluated*, not a
+property of the instrument — and Type B does **not** automatically imply few degrees of freedom.
+Choose the coverage method from the actual inputs and model; `k = 2` is not an automatic 95 %.
 
 ### R3.4 Model-input uncertainty for the as-built prediction
 
@@ -229,4 +270,19 @@ an acceptance threshold. It is a simulation result, not a tolerance. Both thresh
   them (protocol §; and `arlot2010` on the i.i.d. assumption).
 - Report **signed bias and absolute error separately**. A cooler sensor is not a more accurate one.
 - Stratify by the **registered** exposure regime, declared before comparative observation.
-- One 24-hour campaign cannot establish seasonal or general accuracy.
+- One 24-hour campaign cannot establish seasonal or general accuracy. Treat 24 h as a
+  **commissioning minimum**, then extend on **missing exposure coverage**, never on whether a
+  favoured design is winning.
+- **A temperature-only campaign cannot validate an RH claim.** If RH is an endpoint, specify
+  reference RH, sensor RH, their temperatures and calibration records, report RH in **percentage
+  points**, and compare **vapour pressure** `e = (RH/100)·e_sat(T)` as well as RH. If no RH
+  reference is available, **narrow this campaign to temperature**.
+- **Better T/RH is not proof of better PM or gas accuracy** — especially where the existing
+  correction was fitted to *onboard* variables. Substituting a corrected ambient RH into a fitted
+  PM equation requires **retesting against pollutant references**, which is a later campaign.
+- **V0 vs V0P** estimates a finish effect on matched hardware; note that real paint can change
+  `eps` as well as `alpha`, so an alpha-only change is a *model* intervention. **V0P vs V1 is a
+  whole-system comparison** and cannot isolate vent geometry or material. Three unique designs
+  cannot support a general law across independently varied material, finish and vent geometry —
+  that needs controlled single-parameter contrasts, replication, and a genuinely withheld geometry
+  family (a finish replicate is not an unseen geometry).
