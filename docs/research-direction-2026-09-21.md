@@ -58,7 +58,9 @@ lumped model's solar-driven daytime bias to ~0.1 °C median / <0.5 °C p95, and 
 once bias exceeds ~20 °C. **Claim already falsified:** a universal collapse at the preregistered
 3% *relative* p95 band — tripped in every regime, including solar-driven.
 
-**Open methodological point for the owner:** the kill criterion was preregistered as *relative*
+**Open methodological point for the owner** *(revised 2026-09-24: this is a threshold on
+approximation error, not a scientific kill criterion, and it was **not** preregistered — no dated
+pre-run record exists, so the exercise is exploratory)*: the threshold was stated as *relative*
 3%, but the law's natural error is *absolute* °C, and the physical acceptance will be an absolute
 uncertainty (U95). A relative band near ΔT→0 is unphysical. Proposal: **re-register the criterion
 as absolute °C against the registered U95**, recorded as a prospective amendment — not applied

@@ -38,16 +38,20 @@ A literature check (2015–2026, cross-checked against the repo's 26-source matr
 before-build* framing are genuinely under-addressed, but every underlying phenomenon is established,
 so novelty lives in **synthesis + method**, not new physics. Two substantive risks the proposer must
 own: (1) radiation-dominated, low-Reynolds, buoyancy-mixed geometries may not nondimensionalise as
-tidily as forced-convection Nu–Re; (2) Study A already shows the collapse is **not universal**
-(kill criterion tripped in the radiation-dominated tail).
+tidily as forced-convection Nu–Re; (2) **[corrected 2026-09-24 — see Erratum 2]** the original
+second risk claimed Study A had shown the collapse is "not universal". It had not; that residual
+measured linearisation error. The real limitation is that the *linear approximation* degrades at
+large bias, and that physical accuracy remains untested.
 
-## 2. Study A result (done) — the collapse is real but bounded
+## 2. Study A result (done) — dimensionless reduction holds; the *linear approximation* is bounded
 
-See [studyA_nondimensional.md](studyA_nondimensional.md). The lumped model reduces exactly to five
-groups (`Pi_G, N_Q, N_r, f_sky, Pi_d`); the closed form predicts the full nonlinear solver to
-**~0.23 °C / 2–4% median** but the **p95 relative residual (12–64%) trips the preregistered ~3%
-kill criterion** — the collapse holds in the solar-driven regime and **fails in the radiation-
-dominated / near-zero-bias regime.** The Biot gate shows printed polymers (`Bi ~ 0.1–0.6`) violate
+**Corrected 2026-09-24 (see Erratum 2).** See [studyA_nondimensional.md](studyA_nondimensional.md).
+The lumped model reduces to five groups at fixed `tau` (`Pi_G, N_Q, N_r, f_sky, Pi_d`), and the
+**exact nonlinear dimensionless balance is consistent with the solver to tolerance** (max residual
+5.478e-9 over 1,944 points). The *linearised* closed form predicts the nonlinear solver to
+**~0.23 °C / 2–4 % median** and exceeds the selected 3 % relative approximation band at large bias.
+**That is approximation error, not a failure of dimensionless representation, and not a kill
+criterion.** The Biot gate shows printed polymers (`Bi ~ 0.1–0.6`) violate
 the isothermal-wall assumption that classical metal-screen physics relies on.
 
 **Consequence for scope:** "bias always collapses onto a few groups" is falsified for the general
@@ -75,7 +79,7 @@ is honestly an MS design/ranking study and should be presented as such.
 
 | Study | What | Status |
 |---|---|---|
-| **A** | Nondimensional reduction + collapse test on the model | **Done** — regime-dependent; kill criterion tripped for universal claim |
+| **A** | Nondimensional reduction + approximation test on the model | **Done** — exact balance consistent to solver tolerance; the *linearised* form degrades at large bias. Physical accuracy untested |
 | **B** | DOE over the model + CHT (`chtMultiRegionFoam`) on a subset with mesh-convergence; **add wall conduction (Biot) and resolved vent flow** the lumped model omits | Analytical DOE runnable now; CHT needs toolchain (FEA stub) — Owner/allocation gated |
 | **C** | Pilot: 3 printed enclosures (**varied material/finish/vent**, instrumented for internal T + self-heat power), 1 reference, 2 weeks, through the committed intake gate + rehearsal; **Study-A prediction recorded before deployment** | Physical — PI/permission/hardware gated |
 | **D** | Decisive: full material/finish/vent-ratio DOE, environmental-chamber control of wind + irradiance, two climates (adds the radiation-nonlinearity group) | Funded — chamber time + sensors |

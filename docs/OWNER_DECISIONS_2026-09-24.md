@@ -31,7 +31,7 @@ rows 3–8 is in
 | 11 | Is solver/toolchain work funded and authorised? | Allocation for install + verification budget | Owner | `specs/study-b-cht/design.md` §8 | — | **open** | FEA stays a stub; Study B's CHT half cannot start |
 | 12 | Adopt the proposed **CAD tooling rewording**? | Owner sign-off | Owner | `specs/study-b-cht/design.md` §6 | — | **open** | `CAD_PLAN.md` keeps the CadQuery + Onshape allocation |
 | 13 | Adopt **Direction A or B**? | Owner choice | Owner | `research-direction-2026-09-21.md` §1 | — | **open** | The repo carries two research questions; downstream framing stays ambiguous |
-| 14 | Re-register the kill criterion from **relative 3 %** to **absolute °C**? | Owner choice, applied prospectively | Owner | `research-direction-2026-09-21.md` §3 | — | **open** | The criterion stays unphysical near ΔT → 0 and mismatched to a `U95` acceptance |
+| 14 | Re-register the **approximation-error threshold** from relative 3 % to **absolute °C**? *(reworded 2026-09-24: this is a threshold on linearisation error, not a scientific kill criterion — that framing is withdrawn)* | Owner choice, applied prospectively | Owner | `research-direction-2026-09-21.md` §3; `studyA_nondimensional.md` §5 | — | **open** | A relative band stays ill-conditioned near ΔT → 0 and mismatched to a `U95` acceptance |
 | 15 | Bump CI Python ≥ 3.12 to unblock dependabot #27/#28? | Owner choice | Owner | PRs #27, #28 | — | **open** | numpy/pandas bumps stay unmerged. **Caution:** a numerical-library change may alter the byte-exact thermal tables |
 
 ## B. Inputs only a measurement can close

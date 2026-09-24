@@ -136,3 +136,15 @@ PYTHONPATH=. python -m unittest discover -s analysis/tests
 then the agent-buildable queue is empty of unblocked substantive work — the remaining items are the
 manifest validator (needs an approved implementation PR) and Study B's CHT half (needs a toolchain
 allocation).
+
+---
+
+> **Correction notice added 2026-09-24 (record preserved).** The numbers in this dated record are
+> unchanged and were correctly reported at the time. Their *interpretation* has since been
+> withdrawn: the "kill criterion TRIPPED / collapse is regime-dependent" verdict measured
+> **linearisation error**, not a failure of dimensionless similarity. The exact nonlinear
+> dimensionless balance is consistent with the same solver to tolerance (max residual 5.478e-9 over
+> all 1,944 points). The 3 % relative band is a **selected approximation threshold**, not a
+> preregistered scientific kill criterion. See
+> [`docs/studyA_nondimensional.md`](../../docs/studyA_nondimensional.md) §5 and Erratum 2 in
+> [`docs/PHD_SCOPE_AND_NOVELTY.md`](../../docs/PHD_SCOPE_AND_NOVELTY.md).

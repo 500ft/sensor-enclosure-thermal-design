@@ -24,7 +24,7 @@ Four enclosures: aluminium (7.6 cm cube), fiberglass-reinforced polyester (40.6 
 ### Pros
 
 - **Measured internal-vs-ambient elevation for a real PurpleAir enclosure: MB = +1.88 degC, RMSE = 2.84 degC, R^2 = 0.86, and +6.48 degC at daily maximum.** ABS +3.72, FRP +1.78, aluminium +3.43; daily-max biases reach -12.89 degC for aluminium. Predicting daily maximum from ambient alone gives "mean errors and biases exceeding 10 degC".
-- **The only source that separates solar from self-heating with evidence:** "at night, simulated temperatures, ambient temperatures, and observed temperatures are nearly identical", with the largest deviation under variable solar. Internal heat generation and material emissivity are identified as the two dominant model uncertainties, with a per-watt sensitivity analysis.
+- **The most informative source on the solar/self-heating split, though it does not identify it:** "at night, simulated temperatures, ambient temperatures, and observed temperatures are nearly identical", with the largest deviation under variable solar. Internal heat generation and material emissivity are identified as the two dominant model uncertainties, with a per-watt sensitivity analysis.
 - **Directly supports lumped-capacitance modelling:** internal air, wall and battery temperatures agreed within **0.25 degC even at peak solar loading**.
 - Finds internal fans largely ineffective and potentially net-heating: "Bulk airflow on the inside of the sampler is generally an ineffective method of cooling."
 
@@ -36,5 +36,10 @@ Four enclosures: aluminium (7.6 cm cube), fiberglass-reinforced polyester (40.6 
 
 ## Selection Lessons for This Project
 
-- Cite for: the measured PurpleAir-enclosure elevation (+1.88 degC mean, +6.48 degC daily max); the **1-5 W typical dissipation bracket** with SI Table S1; the internal air ~ wall ~ battery agreement within 0.25 degC (which justifies the lumped model); the ineffectiveness of internal fans; and night-time convergence to ambient as evidence that **solar dominates in a passive enclosure**.
+- Cite for: the measured PurpleAir-enclosure elevation (+1.88 degC mean, +6.48 degC daily max); the **1-5 W typical dissipation bracket** with SI Table S1; the internal air ~ wall ~ battery agreement within 0.25 degC (which justifies the lumped model); the ineffectiveness of internal fans; and the night-time convergence to ambient **as an observation about the combined heat balance only**.
+  **Corrected 2026-09-24:** this entry previously offered that convergence as evidence that *solar
+  dominates*. That inference is invalid — outward long-wave loss can exactly offset electronics
+  heating, so near-zero night bias does not imply near-zero dissipation. (Verified counterexample in
+  this repo's own model: `Q = 0.102972 W` returns a night bias of `-1.2e-8 °C`.) Causal attribution
+  requires a controlled power intervention.
 - Do **not** cite it as having *measured* watts (it estimated them from rated input, upper bound), for RH/PM/gas error, or to attribute the PVC +1.88 degC solely to self-heating.
