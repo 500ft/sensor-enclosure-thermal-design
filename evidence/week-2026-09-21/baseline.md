@@ -42,3 +42,15 @@ PHYSICAL-PILOT data touched.
 `git diff --check` reports trailing whitespace on the appended ledger row: `SPRINT_TASKS.csv` is
 CRLF throughout (all 25 rows on `main`), so the new row keeps the file's convention. Not converted,
 to preserve the committed ledger bytes; recorded here rather than silently normalised.
+
+---
+
+> **Correction notice added 2026-09-24 (record preserved).** The numbers in this dated record are
+> unchanged and were correctly reported at the time. Their *interpretation* has since been
+> withdrawn: the "kill criterion TRIPPED / collapse is regime-dependent" verdict measured
+> **linearisation error**, not a failure of dimensionless similarity. The exact nonlinear
+> dimensionless balance is consistent with the same solver to tolerance (max residual 5.478e-9 over
+> all 1,944 points). The 3 % relative band is a **selected approximation threshold**, not a
+> preregistered scientific kill criterion. See
+> [`docs/studyA_nondimensional.md`](../../docs/studyA_nondimensional.md) §5 and Erratum 2 in
+> [`docs/PHD_SCOPE_AND_NOVELTY.md`](../../docs/PHD_SCOPE_AND_NOVELTY.md).

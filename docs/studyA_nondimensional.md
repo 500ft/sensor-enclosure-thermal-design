@@ -2,8 +2,10 @@
 
 **Status: SIMULATION reduction of the existing lumped model. No physical data.** Every input
 inherits the `bounded` / `TODO-from-lab` status of [`thermal_bias.ASSUMPTIONS`](../analysis/thermal_bias.py).
-This document derives the dimensionless groups, states the collapse test and its kill criterion, and
-reports the honest result: **the collapse is regime-dependent, not universal.**
+This document derives the dimensionless groups and reports the **approximation accuracy** of the
+linearised closed form. **Corrected 2026-09-24:** an earlier version framed this as a "collapse
+test" with a "kill criterion" and concluded the collapse was not universal. That was wrong — see
+the corrected verdict in §5. The exact nonlinear dimensionless balance holds to solver tolerance.
 
 ## 1. Governing balance
 
@@ -77,7 +79,7 @@ the lumped model cannot).
 - **Kill criterion (verbatim from the plan):** scatter about the law larger than the model's own
   uncertainty ⇒ **there is no law; the project stays a ranking study.**
 
-## 5. Result — regime-dependent, kill criterion tripped
+## 5. Result — the linearised approximation is bounded; the exact balance holds
 
 `python -m analysis.nondimensional`:
 

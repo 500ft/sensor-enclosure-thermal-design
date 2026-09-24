@@ -383,7 +383,7 @@ model-input provenance table.
 | Kocar et al. (2024) | QUV ISO 4892-3, CIELAB | PLA, 20/60/100 % infill | Colour drifts Delta-E* 3.0-6.1 in 432 h; low infill drifts more |
 | Holder et al. (2020) | PurpleAir/AQY/RAMP vs FEM | PVC cap | **Origin of the 5.3 degC figure**: MBE +5.23 degC, RH -24.30 %, n = 5454 h |
 | Malings et al. (2020) | PurpleAir, NPM, RAMP vs BAM | Plastic shell | **Origin of the 2.7 degC figure**, reported without n, RMSE or named reference |
-| Shlipak et al. (2025) | Thermocouples + weather station | Al, FRP, ABS, PurpleAir PVC endcap | Measured PurpleAir enclosure **+1.88 degC mean, +6.48 degC daily max**; 1-5 W typical dissipation; night convergence shows solar dominates |
+| Shlipak et al. (2025) | Thermocouples + weather station | Al, FRP, ABS, PurpleAir PVC endcap | Measured PurpleAir enclosure **+1.88 degC mean, +6.48 degC daily max**; 1-5 W typical dissipation (estimated from rated input, not measured); night convergence constrains the combined heat balance but does NOT identify the solar/self-heating split (corrected 2026-09-24) |
 | Jayaratne et al. (2018) | Plantower PMS1003 vs DustTrak/TEOM | Sealed field box | PM artefact flat below ~78 % RH then +80 % of reading by 89 % |
 | Samad et al. (2020) | Alphasense B4 vs Horiba/MLU | Sensor chamber | Published RH+T correction polynomials in ppb; 10-25 degC usable window |
 | Popoola et al. (2016) | Alphasense EC vs chemiluminescence | n/a | Temperature-driven NO baseline error ~250 ppb; effect is on baseline, not gain |
