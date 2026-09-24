@@ -14,9 +14,9 @@ the main risk this week:
 | | **Direction A — pre-build prediction (narrowed)** | **Direction B — bounded engineering study (PR #20)** |
 |---|---|---|
 | Question | Do an internal-dissipation ratio, a vent-flow group and a wall-Biot group predict the onboard-T/RH bias of a low-cost 3D-printed AQ enclosure *before fabrication*, and where does that prediction fail? | How do surface finish and ventilation geometry affect the T/RH bias of *this project's* enclosure under varying solar and wind? |
-| Scale | Research-programme scale **only if** validated experimentally on held-out geometries and it beats a post-build baseline | Design/ranking study; honest, achievable with the existing three variants |
-| Physics it adds | Internal dissipation, resolved vent flow, wall conduction — axes classical shield work omits | None new; applies known shield physics to one enclosure |
-| Demotes to | Direction B, if K2 fails | — |
+| Scale | **Reworded 2026-09-24 — automatic degree verdicts withdrawn.** Judge on *useful transfer, accuracy, calibration cost and falsifiable claims*, not on beating one baseline. Still requires experimental validation on held-out geometries | Design/ranking study; honest, achievable with the existing three variants |
+| Physics it adds | Internal dissipation, resolved vent flow, wall conduction. **Corrected 2026-09-24: these are axes classical *meteorological shield* work omits — they are NOT unaddressed generally. Air-STORM (`shlipak2025`) already forward-models an AQ enclosure from materials, weather and internal heat generation.** The narrowed contribution is predicting *measurement bias* on an untested geometry with quantified uncertainty, not forward modelling as such | None new; applies known shield physics to one enclosure |
+| Demotes to | Direction B if transfer is not demonstrated — a research judgement on the evidence, **not** an automatic consequence of one benchmark | — |
 | Needs | Multi-geometry/material printed variant set + held-out test + CHT | Three variants + reference, 24 h+ |
 
 **Recommendation:** pursue **A with B as the guaranteed floor.** The three-variant pilot (Study C)
@@ -157,8 +157,23 @@ done this":
 - **Ishizuka's `X = Re·β²/(1−β)` chimney parameter** is the concrete basis for the vent-flow
   group in Study B; its constants are apparatus-specific and do not transfer.
 
-**K2 benchmark, now defined:** a Bernard-style two-coefficient energy-balance fit (response time +
-radiation gain) per built enclosure, *and* a Nakamura-style single-group regression, both fitted on
-the pilot's own data. The pre-build route succeeds only if it predicts **held-out** printed
-geometries at least as well after counting parameters on both sides. The project is unsuccessful if
-it merely recreates an after-the-fact correction with new names.
+**K2 benchmark (revised 2026-09-24).** Comparators: a Bernard-style two-coefficient energy-balance
+fit and a Nakamura-style single-group regression. Two separate contests, never conflated:
+
+- **(A) No-target-calibration.** Freeze parameters from drawings, independently characterised
+  materials/electronics and *training* designs; predict a **withheld geometry family** without using
+  its thermal response to tune anything. A finish replicate is not an unseen geometry.
+- **(B) Limited-calibration.** Allocate an explicit calibration period on the new geometry and fit
+  **all** eligible methods on that identical allocation; compare on later, disjoint time blocks.
+
+A per-enclosure fitted baseline **cannot** both use target-enclosure calibration data and be called
+a no-target-data comparator — it is a *calibrated reference performance level*, labelled as such. A
+source-trained baseline needs an explicit rule for assigning coefficients to a new design.
+
+Report absolute error, tail error, interval coverage, **calibration effort** and computational
+effort **separately**, with acceptable accuracy defined from the intended application **before**
+viewing outcomes. **Counting named dimensionless groups is not a complexity penalty** — audit actual
+calibrated parameters, empirical closures and property measurements. A smaller model can be useful
+at comparable accuracy with less target calibration even if a well-calibrated model has lower error.
+
+*(Full rewrite of the comparison and verification contracts is critique work package 3, outstanding.)*
