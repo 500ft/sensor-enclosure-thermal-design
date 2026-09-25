@@ -30,9 +30,15 @@ complete cases, and a missingness summary keyed by temperature and power state.
 2. Two arms whose declared cadence or intended window differ.
 3. A timestamp present in one arm and absent in another — must be **dropped from the cross-variant
    contrast and counted**, never back-filled or interpolated.
-4. A missing optional arm — must **not** invalidate a valid V0/V0P contrast.
-5. A duplicate `variant_id`, or a `campaign_id` reused from an existing manifest.
-6. A manifest whose `protocol_commit` is absent or not a resolvable SHA.
+4. A missing optional arm — **degrades to the contrasts that remain valid and reports reduced
+   coverage.** *(Corrected 2026-09-25: this must NOT be a loud global failure; a valid V0/V0P
+   contrast survives an absent optional arm.)*
+5. A duplicate `variant_id`. **`campaign_id` reuse is only detectable against a declared registry
+   or scope** *(corrected 2026-09-25)* — so the ticket must define that registry, or the check is
+   scoped to "unique within this manifest" and says so.
+6. `protocol_commit` absent, **or not resolvable in the declared repository** — a SHA is meaningful
+   only relative to a named repo. An offline archive must supply a documented equivalent
+   integrity/protocol reference instead; that route is admissible, not a failure.
 7. Refusal to overwrite an existing pairing report (follow the rehearsal's refuse-before-write).
 
 **Evidence to close:** the report on a synthetic three-arm campaign; the seven failures above
@@ -43,34 +49,47 @@ demonstrated; the existing intake regression suite unchanged and passing.
 ## T2 — Uncertainty computation
 
 **Affected:** new `analysis/uncertainty.py`; `analysis/tests/test_uncertainty.py`.
+**Scope (corrected 2026-09-25): a small linear covariance calculation — not a symbolic metrology
+engine.** No distribution inference, no free-text equation evaluation, no Monte Carlo.
 
-**Input:** a component table — one row per component with measurement equation, value, distribution,
-evaluation method (A/B), sensitivity coefficient (analytic **or numerical** per GUM 5.1.3 Note 2),
-and correlation basis.
-**Output:** `u_c` for each requested measurand, the coverage factor **with the basis for choosing
-it**, `U`, and a **contribution table** showing each component's share.
+**Input:** values `x`, an explicit sensitivity vector `c` (or Jacobian `J`), standard uncertainties
+or a covariance matrix `Sigma`, units, and provenance. Distribution and evaluation method are
+**documentation of how `u` was obtained**, never a source from which `u` is inferred.
 
-**Contract — the two measurands behave differently and must be requested explicitly:**
-- `absolute_bias(arm)` — the shared-reference component enters **in full**.
-- `difference(arm_a, arm_b)` — for **simultaneous** readings of the **identical** reference, the
-  shared term **cancels exactly**; location mismatch, per-probe calibration and timestamp mismatch
-  do **not** cancel and must remain.
+**Output:** `u_c² = cᵀ Σ c` (multi-output: `J Σ Jᵀ`), with **diagonal variance terms and
+cross-covariance terms reported separately** — a covariance term may be negative, so percentage
+"shares" are not always meaningful.
 
-**Failure cases:**
-1. Requesting `difference` while declaring the readings non-simultaneous or the references distinct
-   — must refuse, not silently cancel.
-2. A component with a declared correlation but no correlation basis — must refuse.
-3. `k = 2` requested where the GUM G.6.6 conditions are not demonstrable from the inputs (dominant
-   single Type B component, few effective degrees of freedom) — must **warn and report the basis**,
-   never assert 95 % silently.
-4. A regression pinning the sign convention: for a **sum**, positive correlation **increases** `u_c`;
-   for a **difference**, it **decreases** it. *(This is the error the pilot spec originally made.)*
-5. Zero or negative declared uncertainty on a component.
+**Validation contract:**
+- `u = 0` accepted **with provenance** (exact input or deliberate model treatment). Negative or
+  non-finite `u` rejected. **A missing uncertainty never defaults to zero.**
+- `Σ` must be finite, symmetric, correctly dimensioned, non-negative on the diagonal, and **positive
+  semidefinite within a declared tolerance**. Pairwise `r ∈ [-1,1]` is necessary but **not
+  sufficient**. Physically required **singular** matrices are preserved, not rejected.
+- A shared reference is **the same input node**. For `y1 = A−R`, `y2 = B−R`, the contrast `y1−y2`
+  cancels `R` **algebraically** — not because a rule says so, and **other errors do not cancel**.
+- Distinct references or time slots do **not** make a difference invalid: use the declared
+  covariance model, and refuse only the **unsupported automatic-cancellation shortcut**. Never
+  silently reuse the identical-reference formula.
+- Standard uncertainty is always reportable when well-defined. `U = k·u_c` requires an **explicit
+  coverage-factor basis**; with none, report `k` and `U` as *supplied* and leave the probability
+  **unspecified**. **Never assert 95 %.** One Type B contribution does **not** invalidate `k = 2`
+  nor imply few degrees of freedom.
 
-**Evidence to close:** GUM §5.2.2's own worked resistor example reproduced (1 Ω correlated vs 0.32 Ω
-uncorrelated) as a **sum** fixture, plus a difference fixture showing the opposite direction.
+**Known-answer fixtures (documented, not copied from the implementation):**
 
----
+| # | Case | Expected |
+|---|---|---|
+| 1 | A, B each `u=0.1`, R `u=0.2`, independent | absolute bias `√0.05 = 0.2236068`; difference `√0.02 = 0.1414214` |
+| 2 | Two unit inputs, `r = 0.5` | sum `√3`; difference `1` — pins the covariance **sign** |
+| 3 | Ten resistors `u=0.1 Ω`, perfectly shared calibration | sum `1 Ω`; independent `√0.1 = 0.3162278 Ω` (GUM basis) |
+| 4 | `u=0` with provenance | accepted; negative / NaN / inf / missing rejected; singular shared-reference `Σ` accepted |
+| 5 | Symmetric `Σ` with off-diagonals (0.9, 0.9, −0.9) | **rejected as non-PSD** though each `r` is individually legal |
+| 6 | Different-reference contrast | accepted with explicit covariance; automatic common-reference cancellation refused; unit mismatch refused |
+| 7 | No coverage-probability justification | output never prints "95 %" |
+
+**Evidence to close:** the seven fixtures pass with documented known answers, and the existing suite
+and CI gates stay green.
 
 ## T3 — Auxiliary channel ingestion (T/RH, power, extra nodes)
 
@@ -85,15 +104,21 @@ pressure** `e = (RH/100)·e_sat(T)` for both reference and sensor; and a per-int
 joined from the power/airflow registers.
 
 **Failure cases:**
-1. RH present without its own co-located temperature — must refuse (RH is meaningless alone, and
-   vapour pressure is uncomputable).
-2. **Rated** power supplied instead of measured V and I — must refuse; the field is `measured_v` and
-   `measured_i`, and there is no `rated_w` input.
-3. An interval whose fan state is `unknown` — must be flagged **ineligible for the I1 contrast**,
-   and retained rather than dropped.
-4. Timestamps not on the declared grid, or outside the intended window.
-5. RH outside 0–100 %, or a physically impossible dewpoint (`e > e_sat(T)`).
-6. Silent unit coercion — units are declared per column and mismatches refuse.
+1. **RH without a matched temperature is retained as a reported measurement** *(corrected
+   2026-09-25)* — it is only **vapour pressure that is uncomputable**, so refuse the *derived
+   product*, not the raw channel. Derive a product only when its inputs are usable.
+2. **Rated** power instead of measured V and I — must refuse. *(Corrected 2026-09-25: a
+   **calibrated measured-power channel** is an acceptable substitute for V·I; `rated_w` is not.)*
+3. **Sampling declaration required for V·I:** for varying signals `mean(V·I) ≠ mean(V)·mean(I)`.
+   The input must declare whether power is instantaneous-then-averaged or averaged-then-multiplied;
+   an undeclared combination refuses.
+4. An interval whose fan state is `unknown` — flagged **ineligible for the I1 contrast**, retained
+   in coverage. **Eligibility and retention are separate concerns.**
+5. Timestamps not on the declared grid, or outside the intended window.
+6. **Out-of-range readings (RH > 100 %, `e > e_sat(T)`) are preserved with a flag, not clamped and
+   not deleted** *(corrected 2026-09-25)*. Supersaturation near condensation is physically
+   reportable; the sensor reading is data, the derived product is what gets withheld.
+7. Silent unit coercion — units are declared per column and mismatches refuse.
 
 **Evidence to close:** synthetic fixtures for all six; a vapour-pressure round-trip check; and a
 demonstration that an `unknown` fan-state interval is excluded from I1 **but still counted** in
@@ -105,19 +130,31 @@ coverage.
 
 **Affected:** new `analysis/prediction_contract.py`; tests.
 
-Enforces §9.6 of the Study B design: a **before-build** prediction may consume only quantities
-available before the target enclosure is built and measured.
+Enforces §9.6 of the Study B design. **Corrected 2026-09-25: classify by transitive INPUT
+provenance and calibration access — not by whether a variable was "solved".**
 
-**Input:** a declared predictor set, each tagged `design` / `independently_characterised` /
-`environmental` / `target_derived`.
-**Output:** admissible or refused, naming the offending predictors.
+A `Re_vent` produced by a **frozen forward solver** consuming only admissible design, property and
+environmental inputs is a **derived prediction**, and is admissible. What leaks is a **measured**
+target vent velocity, a coefficient **tuned** on the target, or an **observed** target temperature.
+The earlier rule would have blocked all CHT output, which is wrong.
 
-**Failure cases:** a `target_derived` predictor (solved `Re_vent`, measured vent velocity, or any
-held-out response) in a contest-A prediction must **refuse**; the same predictor is admissible in
-contest B **only** if declared inside the calibration allocation.
+**Input:** a predictor graph — each node tagged `design` / `independently_characterised` /
+`environmental_observed` / `target_measured` / `target_tuned` / `derived(parents…)`.
+**Output:** admissible or refused, naming the offending node **and the path that taints it**.
 
-**Evidence to close:** a contest-A fixture refusing a solved-`Re_vent` predictor, and a contest-B
-fixture accepting it with the allocation declared.
+**Rules:**
+- `derived` inherits the worst provenance among its transitive parents — the check is on the path,
+  not the node.
+- `environmental_observed` is admissible for a **registered conditional** prediction ("given the
+  observed forcing"). It must **not** be relabelled a forecast made from pre-deployment weather
+  alone — those are different claims and the label must state which.
+- Contest B admits target-derived inputs **only** inside the declared calibration allocation.
+
+**Failure cases:** a solver output whose parent is a measured target velocity must **refuse** (the
+taint is transitive); the same solver output from design+property+environment inputs must **pass**;
+a conditional prediction relabelled as a forecast must **refuse**.
+
+**Evidence to close:** the three fixtures above, each naming the tainting path.
 
 ---
 

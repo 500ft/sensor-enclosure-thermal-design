@@ -14,6 +14,36 @@ rows 3–8 is in
 (evidence received *and* accepted) · `declined` · `deferred`. A request that has been *sent* is
 `pending`, never `accepted` — transmission is not receipt.
 
+## A0. Disposition of all 21 rows (2026-09-25)
+
+The 21 rows mixed **choices**, **missing facts**, **external permissions** and **process events** —
+so a blanket "answer these 21" was the wrong instrument. Routine planning choices are now
+**selected** under the owner's delegation; the rest are grouped into **four evidence packets**.
+**Selecting a scope is not acquiring data, approval or authority.**
+
+**Selected (planning choices, revisable):** #07 simultaneous · #09 separate the new-campaign
+dependency from `EN-S02` (reviewed ledger amendment; **not** authority to mark `EN-R03` ready) ·
+#10 no new CAD unless inventory names a missing fixture · #11 solver allocation deferred ·
+#12 CAD tooling migration deferred · **#13 Direction B now, A conditional** · #14 absolute °C as the
+primary approximation metric · #15 keep Python 3.11 today · #20 temperature-only minimum campaign ·
+#21 held-out geometry deferred with Direction A · #08 **removed as a standalone row** — consolidated
+into the within-unit power intervention (#17/#18).
+
+**Deferred with a trigger:** #01 historical outreach — *not* hidden inside any bulk approval;
+#06 protocol freeze is a **process milestone**, executed after scope/equipment/thresholds/permissions
+resolve (record approver, date, SHA — today's draft is **not** preregistered).
+
+**Four evidence packets (what is actually still needed):**
+
+| Packet | Rows | Asks for |
+|---|---|---|
+| **A. Purpose** | #16 | intended use and maximum tolerable T error (with exposure/averaging interval). If unknown → register an **estimation-only** study: report bias and uncertainty, **no fit-for-purpose verdict** |
+| **B. Inventory** | #03 #04 #18 #19 #20 | unit/probe/reference IDs and counts, calibration records, **fan-power independence**, position-rotation feasibility, RH reference availability |
+| **C. Permission** | #02 #05 #17 | the concrete pilot + **specific load procedure**, site access, and raw-data custody/retention |
+| **D. Freeze** | #06 | final protocol/analysis version with recorded prospective acceptance |
+
+Physical progress depends on **receipts**, not on unanswered defaults.
+
 ## A. Decisions
 
 *Rows 16–21 added 2026-09-24 from the experiment contract (WP2) and the revised K2 contests.*
@@ -49,18 +79,18 @@ They are listed so they are not mistaken for open questions awaiting an opinion.
 
 | Quantity | Why it must be measured |
 |---|---|
-| **Internal electrical input power (W)** at the enclosure | **No published source measures it.** This is the pilot's distinctive contribution and the `N_Q` axis depends on it |
+| **Internal electrical input power (W)** at the enclosure | *No source located in this repository's search record* reports a measured internal dissipation for a low-cost AQ enclosure with the bias attributed to it — a statement about the search record, **not** a claim that none exists. `shlipak2025` brackets 1–5 W but **estimates** from rated input. `N_Q` depends on measuring it here |
 | Wall thickness and material conductivity per printed variant | Printed `k` differs from handbook values, and is anisotropic (~1.6×) |
 | **Solar absorptance `alpha` and emissivity `eps` per finish** | **No measured `alpha` for a printed wall exists in any source found.** Colour name is not evidence |
 | Vent count, dimensions and open area | Ambient wind is **not** vent velocity |
 | Enclosure geometry (`A_proj`, `A_conv`, sensor stand-off) | `A_conv` is an *effective coupled* area, not total CAD surface |
-| Dewpoint during the campaign | The fixed 20 K sky depression is unsupported; the sky term needs dewpoint |
+| Sky/long-wave condition during the campaign | The fixed 20 K sky depression is unsupported. **Dewpoint alone does not determine effective sky temperature under cloud** — prefer measured long-wave, else a documented sky model with cloud information and stated uncertainty; log dewpoint as an input to that model, not as the answer |
 
 ## C. What is already decided and needs no new ruling
 
 - Data mapping: **one CSV per variant plus a campaign manifest** (pilot spec R2.1); the existing
   single-pair intake is preserved unchanged.
 - Data-readiness thresholds: **quoted from the existing protocol**, not redefined.
-- No fan arm is proposed (`shlipak2025`: internal fans are largely ineffective and may net-heat).
+- No fan arm is proposed **as a scope choice for the minimum campaign — not a finding that aspiration is ineffective.** `shlipak2025` tested *internal recirculation*; `deford2025` aspirates fresh air across an isolated probe, a different arrangement (experiment contract I6). Keep an independently characterised reference either way.
 - The scientific comparison tolerance stays **TBD** until row 4 and an application tolerance exist.
   It will **not** be inferred from any model output.

@@ -30,8 +30,17 @@ temperatures. Treating them as one is an assumption to be **tested at commission
 **Commissioning test (before the campaign):** log all available nodes for ≥1 full diurnal cycle and
 report the spread. `shlipak2025` found internal air, wall and battery within **0.25 °C** even at
 peak solar in *one ABS enclosure*; that does **not** establish isothermality for this geometry or
-this sensor. If the measured spread here exceeds the pilot's `u_c` target (0.25 °C), the single-node
-treatment is **not adequate** and the model comparison must say so.
+this sensor.
+
+**Corrected 2026-09-25 — this gate was mis-specified.** A raw spread above 0.25 °C does **not** by
+itself prove the model inadequate, and a small spread does **not** prove it adequate; and the
+0.25 °C figure was an *instrument* uncertainty target borrowed as a *model-structure* threshold,
+which it is not. Correct form: (i) state **which prediction** the single node is meant to
+approximate, and over **which exposure**; (ii) register a **node-equivalence tolerance** for that
+prediction, with its rationale; (iii) compare the observed spread against it **after** accounting
+for probe uncertainty, so the decision is uncertainty-aware. If no tolerance can be justified in
+advance, report the spread as **diagnostic evidence** and say so — do not convert it into a
+pass/fail verdict after the fact.
 
 **Area mapping must be written before any coefficient is compared.** `A_conv` for V0 and for V1 are
 *different coupled systems*, not the same parameter measured twice. `A_conv` is an **effective
@@ -132,9 +141,20 @@ corrected ambient RH into a fitted PM equation **requires retesting against poll
 - **Pre- and post-campaign bracketing checks** for every sensor and the reference, against the same
   standard, with dates recorded. Drift between brackets is an uncertainty component (R3.1 #6), not a
   correction to be silently applied.
-- **Independent property characterisation** before the campaign: `alpha` and `eps` per finish (with
-  the measurement standard named), wall thickness and conductivity per printed variant, vent open
-  area by CAD inspection.
+- **Property characterisation — required per claim, not universally (corrected 2026-09-25).** The
+  earlier text made independent `alpha`, `eps` and conductivity prerequisites for *everything*. They
+  are not needed to compare complete devices empirically.
+
+  | Claim | Required | Optional / strengthens |
+  |---|---|---|
+  | Whole-design bias ranking (V0/V0P/V1) | matched exposure, characterised reference, geometry by direct inspection | `alpha`, `eps` |
+  | Finish effect (I4) | documented finish change on matched hardware | measured `alpha` **and** `eps` (paint moves both) |
+  | Dissipation response (I1) | measured V·I, fixed airflow | heat-path model |
+  | Parameterised / transfer prediction | `alpha`, `eps`, wall `k` and `t`, vent open area | — |
+
+  **Missing CAD is not a reason to skip usable hardware** — measure the existing enclosures with
+  suitable inspection tools. A controlled heater estimates the response to *that imposed heat path*;
+  mapping it back to distributed electronics heat needs an explicit, stated check.
 - A drawing **cannot** close a `measurement`-route parameter. Changing an acquisition route requires
   a prospective, written amendment.
 
@@ -176,9 +196,11 @@ temperature or power state.
 
 1. **24 hours is a commissioning minimum**, not a sufficient campaign (existing protocol thresholds
    apply per arm and are not redefined here).
-2. **Extend on missing exposure coverage**, never on whether a favoured design is winning. The
-   registered exposure targets — illuminated and low-solar paired counts — are the only admissible
-   trigger.
+2. **Extend on missing exposure coverage**, never on whether a favoured design is winning.
+   *(Corrected 2026-09-25: illuminated and low-solar counts alone are insufficient.)* Register
+   **joint** coverage — in particular the **low-wind / high-solar** cell the research question
+   actually targets — and **intervention coverage**: completed, counterbalanced load blocks for I1.
+   Those, not a single marginal count, are the admissible triggers.
 3. **Declare a maximum extension window before observing comparative results.**
 4. If coverage remains incomplete at the window's end, **retain the result as incomplete** and record
    the stop decision. Do not relax a threshold after seeing outcomes.
@@ -194,7 +216,7 @@ temperature or power state.
 | Finish changes bias | I4 (matched hardware) | intervention — but joint `(alpha, eps)` |
 | Dissipation changes bias | **I1** | intervention — **°C/W** |
 | Ventilation changes bias | I3 | intervention — conditional on material/source |
-| Design V1 beats V0P | I5 | **association** — whole-system ranking only |
+| Design V1 beats V0P | I5 | **bundled design effect.** *(Corrected 2026-09-25: if arms are **randomly assigned** to positions/time blocks, this estimates a causal **bundled** effect — lack of factor isolation does not make it merely associational. State the actual assignment; without randomisation it is association.)* Never an isolated vent or material effect |
 | Solar drives the bias | I2 | intervention |
 | "Self-heating dominates" / "solar dominates" | — | **not claimable** without I1 and I2 together |
 | Better T/RH improves PM/gas | — | **not claimable** — separate campaign with pollutant references |
