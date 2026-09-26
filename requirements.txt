@@ -3,8 +3,20 @@
 # Resolved 2026-09-11 on Python 3.11 (the CI interpreter). The byte-exact thermal-table gate
 # was verified identical under these pins AND under the range floor (numpy 1.26.4, pandas 2.2.0,
 # matplotlib 3.8.0), so pinning changes attribution, not today's result.
+charset-normalizer==3.5.1
+contourpy==1.4.0
+cycler==0.12.1
+fonttools==4.66.0
+kiwisolver==1.5.1
+lxml==6.1.3
 matplotlib==3.11.2
-numpy==2.4.6
+numpy==2.5.3
+packaging==26.3
 pandas==3.0.6
+pillow==12.3.0
+pyparsing==3.3.3
+python-dateutil==2.9.0.post0
 python-docx==1.2.0
 reportlab==5.0.1
+six==1.17.0
+typing-extensions==4.16.0
