@@ -51,6 +51,57 @@ meteorological screens; it does **not** hold for low-cost printed polymer enclos
 | PET-G at 25 % infill | 0.057–0.104 | 0.20–0.37 | 0.72–1.32 | measured |
 | Aluminium | 205 | ~0 | ~0 | handbook |
 
+### 3.1 Worked calculation — wall Biot screening
+
+*Format: question → inputs (with provenance IDs) → assumptions → model → substitution → result →
+unit check → sensitivity → decision → validation. Canonical inputs are defined once in
+[`PARAMETER_REGISTER.csv`](PARAMETER_REGISTER.csv); they are referenced here, not redefined.*
+
+**Question.** Is the isothermal-wall assumption underlying the lumped model admissible for a printed
+polymer enclosure wall?
+
+**Inputs**
+
+| Symbol | Value | Unit | ID | Provenance / evidence |
+|---|---|---|---|---|
+| `t` | 3 | mm | — | **provisional** — nominal wall thickness; not measured on our specimens |
+| `k` | 0.104–0.290 | W/mK | `P-KWALL` | `measured_result_external` — three labs, ASTM C177 / E1530; **our specimens not measured** |
+| `h` | 6.8–25 | W/m²K | `P-HFLOOR`, `P-HSLOPE` | back-solved from the project's own implied range; both inputs **contradicted by source** |
+
+**Assumptions.** One-dimensional conduction through the wall thickness; `h` is the *combined*
+external film coefficient; `k` is the **through-layer** value where direction is resolved
+(`janek2026`), which is the direction a wall conducts. Anisotropy ratio **1.60**, so an in-plane `k`
+would understate `Bi` by up to ~60 %.
+
+**Model.** `Bi = h·t/k` — the ratio of internal conduction resistance to external film resistance.
+`Bi ≪ 1` is the condition under which a single wall node is defensible. This is a **screening
+ratio, not a verdict**: low `Bi` does not make separate plates, or a sensor-to-wall gap, isothermal
+(Study B §9.8).
+
+**Substitution.** Worst credible case, through-layer ABS at the high film coefficient:
+`Bi = 25 W/m²K × 0.003 m ÷ 0.1039 W/mK`
+
+**Result.** `Bi ≈ 0.72` (worst credible); range across materials and film conditions **0.07 – 0.72**.
+Two significant figures — the inputs support no more.
+
+**Unit check.** `(W/m²K · m) / (W/mK) = (W/mK)/(W/mK) = 1` ✓ dimensionless.
+
+**Sensitivity.** `Bi ∝ h·t/k`, so it is linear in each. Infill is the largest lever: `lopes2023`
+shows infill *pattern alone* moves effective `k` by **82 %** at fixed density, which would push
+`Bi` to ~**1.3** for a genuinely infilled wall. Using the old handbook PLA value (0.13) inflated
+`Bi` by **40–105 %** — that error is corrected above.
+
+**Decision.** Treat the single-node lumped model as **provisional, not invalid**: at `Bi ≈ 0.1` a
+lumped wall is a reasonable engineering approximation; at `Bi > 1` it is **violated**. Since the
+range spans both, the model is retained *with the validity question registered* rather than assumed
+either way. This is why the commissioning node-spread test exists (experiment contract §1).
+
+**Validation.** Measure wall thickness and through-thickness `k` on **our** printed specimens, and
+measure the inner/outer wall gradient directly (node map `T_w,i` / `T_w,o`). **Status: unverified —
+no property of our specimens has been measured.** A caveat none of the cited sources addresses: a
+3 mm wall printed with perimeter shells may be near-solid regardless of the infill *setting*, so the
+low-infill rows are an **upper bound** on the effect for a real wall.
+
 **Corrected 2026-09-22.** This table previously used *handbook bulk* conductivities (PLA 0.13, ABS
 0.17, PETG 0.29). Three independent labs measured **printed** PLA at 0.182–0.267 W/mK
 ([`baraboi2026`](../literature/REVIEW_2026-09-22.md), `tychaniczkwiecien2025`, `rodriguez2023`), so
