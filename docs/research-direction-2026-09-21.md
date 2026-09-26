@@ -55,8 +55,13 @@ mechanism, see `nondimensional.regime`):
 
 Overall R² = 0.972. **Claim the evidence supports:** the five-group linear law reproduces the
 lumped model's solar-driven daytime bias to ~0.1 °C median / <0.5 °C p95, and fails by several °C
-once bias exceeds ~20 °C. **Claim already falsified:** a universal collapse at the preregistered
-3% *relative* p95 band — tripped in every regime, including solar-driven.
+once bias exceeds ~20 °C. **Corrected 2026-09-25 — the previous sentence here claimed a universal
+collapse had been "falsified at the preregistered 3 % band", which contradicted the very next
+paragraph and is withdrawn.** Nothing was falsified and nothing was preregistered: the exact
+nonlinear dimensionless balance is consistent with the solver to tolerance (max residual 5.478e-9
+over 1,944 points), and the 3 % relative band is a **selected approximation threshold** applied to
+an **exploratory** exercise with no dated pre-run record. What the residual shows is that the
+*linearised* form loses accuracy at large bias.
 
 **Open methodological point for the owner** *(revised 2026-09-24: this is a threshold on
 approximation error, not a scientific kill criterion, and it was **not** preregistered — no dated
@@ -75,7 +80,17 @@ retroactively to call the current result a pass.
   measured in the printed variant set.
 - **K4** — the CHT/lumped disagreement cannot be bounded well enough to design the pilot (Study B).
 
-Any one fired ⇒ present the work as Direction B. This is a legitimate outcome, not a failure.
+**Revised 2026-09-25 — no automatic demotion.** A fired criterion is *evidence for a judgement*,
+not a switch. Weigh it against the others, the available units and exposure, and the cost of the
+calibration it would take to do better. Presenting the work as Direction B is a legitimate outcome
+reached on the evidence, never an automatic consequence of one criterion.
+
+**Direction selected 2026-09-25: B (bounded engineering study) is the immediate scope.** Direction A
+is retained as a conditional follow-on, activated only by a credible held-out design family, frozen
+predictor provenance, and validation resources. Rationale: B yields useful evidence without first
+requiring a new geometry family, a CFD installation, or a broad novelty claim — and its measurements
+remain usable by A later. "A with B as a floor" was not a guarantee: B needs hardware, reference
+characterisation, permission and observations of its own.
 
 ## 5. Contribution boundary and permitted language
 
