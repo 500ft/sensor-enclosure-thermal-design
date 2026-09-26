@@ -68,6 +68,10 @@ SIGMA = 5.670374419e-8  # Stefan-Boltzmann constant [W m^-2 K^-4]
 #   geometry  -> placeholder geometry, TODO-from-lab baseline_system_description
 #   physics   -> standard physical constant / textbook correlation form
 #   swept     -> varied across a range in the main sweep
+# Canonical provenance and evidence status for every entry below live in
+# docs/PARAMETER_REGISTER.csv (stable IDs P-*). The status strings here are the LOCAL shorthand;
+# the register reconciles them with the literature, lab and claim taxonomies and records which
+# values are contradicted by a source, uncited, or lab-required. Do not duplicate values there.
 ASSUMPTIONS = [
     # name, value, units, source/status, note
     ("G_clear_sky", "800-1000", "W/m^2", "swept/bounded",
